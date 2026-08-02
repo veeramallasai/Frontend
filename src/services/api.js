@@ -3,10 +3,10 @@ import axios from 'axios';
 const baseURL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || '/api/v1';
 console.log('[API Config] Using baseURL:', baseURL);
 
-// Create Axios Instance with realistic 15s timeout
+// Create Axios Instance with 30s timeout for cloud responsiveness
 const api = axios.create({
   baseURL: baseURL,
-  timeout: 15000,
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
