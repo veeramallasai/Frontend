@@ -632,6 +632,23 @@ export const CustomerProvider = ({ children }) => {
     }
   };
 
+  const cancelOrder = async (orderId) => {
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return;
+
+    try {
+      await api.patch(`/orders/${orderId}/cancel`);
+      toast.success('Order cancelled successfully');
+      setOrders((prev) =>
+        prev.map((o) => (o.id === orderId ? { ...o, status: 'CANCELLED' } : o))
+      );
+      await fetchOrders();
+    } catch (err) {
+      const message = err?.response?.data?.message || err?.message || 'Failed to cancel order';
+      toast.error(message);
+    }
+  };
+
   const addProduct = async (productData) => {
     try {
       const newProductObj = {
@@ -723,7 +740,7 @@ export const CustomerProvider = ({ children }) => {
       addProduct,
       deleteProduct,
     }),
-    [products, cart, wishlist, addresses, orders, selectedAddressId]
+    [products, cart, wishlist, addresses, orders, selectedAddressId, cancelOrder]
   );
 
   return <CustomerContext.Provider value={value}>{children}</CustomerContext.Provider>;
