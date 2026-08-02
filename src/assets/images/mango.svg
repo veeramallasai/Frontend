@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">Mango</title>
+  <desc id="desc">High quality stylized mango illustration</desc>
+  <defs>
+    <radialGradient id="bg" cx="30%" cy="20%" r="120%">
+      <stop offset="0%" stop-color="#fff7ed"/>
+      <stop offset="100%" stop-color="#ffedd5"/>
+    </radialGradient>
+    <linearGradient id="mangoBody" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fde047"/>
+      <stop offset="45%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#ea580c"/>
+    </linearGradient>
+    <linearGradient id="leafGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#4d7c0f"/>
+      <stop offset="100%" stop-color="#14532d"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="120" fill="url(#bg)"/>
+  <ellipse cx="512" cy="868" rx="250" ry="38" fill="#000" opacity="0.08"/>
+  <path d="M642 218c-10-48 4-100 42-136 8-8 22-5 26 6 20 52 8 112-30 154z" fill="#6b3f1e"/>
+  <path d="M598 260c62-34 156-34 210 28-50 46-150 58-220 22z" fill="url(#leafGrad)"/>
+  <path d="M646 286c146 56 220 214 162 354-56 138-208 230-366 168-176-70-250-280-168-440 78-152 238-176 372-82z" fill="url(#mangoBody)"/>
+  <path d="M386 376c-86 42-126 156-82 252 34 74 110 124 192 124" fill="#fef08a" opacity="0.42"/>
+  <ellipse cx="438" cy="474" rx="90" ry="58" fill="#fff" opacity="0.22" transform="rotate(-28 438 474)"/>
+  <ellipse cx="654" cy="664" rx="94" ry="66" fill="#9a3412" opacity="0.25"/>
+</svg>
