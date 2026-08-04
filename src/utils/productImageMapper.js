@@ -178,7 +178,7 @@ export const getProductImage = (name = '', category = '', customUrl = '') => {
   // 1. Prefer valid custom image URL from backend/seed data.
   if (customUrl && isUsableImageUrl(customUrl)) {
     const trimmed = customUrl.trim();
-    const apiBase = (import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || '').replace(/\/api\/v1\/?$/, '');
+    const apiBase = (import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'https://farmtohome-production-ca90.up.railway.app/api/v1').replace(/\/api\/v1\/?$/, '');
     if (trimmed.startsWith('/uploads/')) {
       return apiBase ? `${apiBase}${trimmed}` : trimmed;
     }

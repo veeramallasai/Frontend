@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
-  const proxyTarget = process.env.VITE_PROXY_TARGET || 'http://localhost:8081'
+  const proxyTarget = process.env.VITE_PROXY_TARGET || 'https://farmtohome-production-ca90.up.railway.app'
 
   return {
     plugins: [react()],

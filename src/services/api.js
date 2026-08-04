@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const baseURL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || '/api/v1';
+const baseURL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'https://farmtohome-production-ca90.up.railway.app/api/v1';
 console.log('[API Config] Using baseURL:', baseURL);
 
 // Create Axios Instance with 30s timeout for cloud responsiveness

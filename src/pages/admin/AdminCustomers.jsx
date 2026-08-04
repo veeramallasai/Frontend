@@ -190,7 +190,7 @@ export default function AdminCustomers() {
   const fetchTotalCustomers = async () => {
     try {
       setLoadingTotalCustomers(true);
-      const apiBaseUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '/api/v1';
+      const apiBaseUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'https://farmtohome-production-ca90.up.railway.app/api/v1';
 
       let data = null;
       try {

@@ -20,7 +20,7 @@ import mangoImg from '../assets/images/mango.svg';
 import orangeImg from '../assets/images/orange.svg';
 
 const catalogApi = axios.create({
-  baseURL: import.meta.env.VITE_CATALOG_API_BASE_URL || import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || '/api/v1',
+  baseURL: import.meta.env.VITE_CATALOG_API_BASE_URL || import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'https://farmtohome-production-ca90.up.railway.app/api/v1',
   timeout: 15000,
   headers: {
     'Content-Type': 'application/json',

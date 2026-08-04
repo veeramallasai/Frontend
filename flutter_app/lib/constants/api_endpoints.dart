@@ -1,9 +1,8 @@
 import 'package:flutter/foundation.dart';
 
 class ApiEndpoints {
-  // Use 10.0.2.2 for Android Emulator to access localhost of the host system.
-  // Use localhost or custom IP for web/iOS.
-  static String get baseUrl => kIsWeb ? 'http://localhost:8081' : 'http://10.0.2.2:8081';
+  // Deployed backend on Railway
+  static String get baseUrl => 'https://farmtohome-production-ca90.up.railway.app';
 
   // Auth Routes
   static const String login = '/api/v1/auth/login';

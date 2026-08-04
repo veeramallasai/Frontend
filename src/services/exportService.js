@@ -1,8 +1,8 @@
 import axios from 'axios';
 
-const defaultExportBaseUrl = (import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || '').replace(/\/v1\/?$/, '');
+const defaultExportBaseUrl = (import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'https://farmtohome-production-ca90.up.railway.app/api/v1').replace(/\/v1\/?$/, '');
 const exportApi = axios.create({
-  baseURL: import.meta.env.VITE_EXPORT_API_BASE_URL || (defaultExportBaseUrl ? `${defaultExportBaseUrl}/api` : '/api'),
+  baseURL: import.meta.env.VITE_EXPORT_API_BASE_URL || (defaultExportBaseUrl ? `${defaultExportBaseUrl}/api` : 'https://farmtohome-production-ca90.up.railway.app/api'),
   timeout: 60000,
 });
 
