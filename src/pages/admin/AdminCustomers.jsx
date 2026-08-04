@@ -190,17 +190,17 @@ export default function AdminCustomers() {
   const fetchTotalCustomers = async () => {
     try {
       setLoadingTotalCustomers(true);
-      const apiBaseUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'https://farmtohome-production-ca90.up.railway.app/api/v1';
+      const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || 'https://farmtohome-production-ca90.up.railway.app').replace(/\/+$/, '');
 
       let data = null;
       try {
-        const response = await fetch(`${apiBaseUrl}/customers`);
+        const response = await fetch(`${apiBaseUrl}/api/v1/customers`);
         if (response.ok) {
           data = await response.json();
         }
       } catch (e) {
         try {
-          const response = await fetch(`${apiBaseUrl}/admin/customers`);
+          const response = await fetch(`${apiBaseUrl}/api/v1/admin/customers`);
           if (response.ok) {
             data = await response.json();
           }

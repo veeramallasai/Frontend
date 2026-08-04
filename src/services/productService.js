@@ -19,12 +19,30 @@ import appleImg from '../assets/images/apple.svg';
 import mangoImg from '../assets/images/mango.svg';
 import orangeImg from '../assets/images/orange.svg';
 
+const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || 'https://farmtohome-production-ca90.up.railway.app').replace(/\/+$/, '');
+
 const catalogApi = axios.create({
-  baseURL: import.meta.env.VITE_CATALOG_API_BASE_URL || import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'https://farmtohome-production-ca90.up.railway.app/api/v1',
+  baseURL: apiBaseUrl,
   timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
   },
+});
+
+catalogApi.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  if (config.url && !config.url.startsWith('http://') && !config.url.startsWith('https://')) {
+    let url = config.url.trim();
+    if (!url.startsWith('/')) url = '/' + url;
+    if (!url.startsWith('/api/')) {
+      url = `/api/v1${url}`;
+    }
+    config.url = url.replace(/^\/api\/api\//, '/api/');
+  }
+  return config;
 });
 
 const toNumber = (value, fallback = 0) => {
