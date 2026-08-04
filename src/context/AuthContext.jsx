@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import api from '../services/api';
+import api, { isTokenExpired } from '../services/api';
 import toast from 'react-hot-toast';
 
 const AuthContext = createContext(null);
@@ -137,21 +137,40 @@ export const AuthProvider = ({ children }) => {
         const storedToken = localStorage.getItem('token') || sessionStorage.getItem('token');
         const storedUser = localStorage.getItem('user') || sessionStorage.getItem('user');
 
-        if (storedToken && storedUser) {
-          const parsedUser = JSON.parse(storedUser);
-          setUser(parsedUser);
-          setToken(storedToken);
-          setIsAuthenticated(true);
+        if (storedToken) {
+          if (isTokenExpired(storedToken)) {
+            console.warn('[AuthContext] Initializing: Stored token is expired or invalid. Clearing auth session.');
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            sessionStorage.removeItem('token');
+            sessionStorage.removeItem('user');
+            setUser(null);
+            setToken(null);
+            setIsAuthenticated(false);
+            setIsLoading(false);
+            return;
+          }
 
-          const isRemembered = !!localStorage.getItem('token');
-          try {
-            await fetchFullUserProfile(storedToken, parsedUser.email, parsedUser.role, isRemembered);
-          } catch (profileErr) {
-            console.warn('[AuthContext] Profile refresh warning:', profileErr?.message);
+          if (storedUser) {
+            const parsedUser = JSON.parse(storedUser);
+            setUser(parsedUser);
+            setToken(storedToken);
+            setIsAuthenticated(true);
+
+            const isRemembered = !!localStorage.getItem('token');
+            try {
+              await fetchFullUserProfile(storedToken, parsedUser.email, parsedUser.role, isRemembered);
+            } catch (profileErr) {
+              console.warn('[AuthContext] Profile refresh warning:', profileErr?.message);
+            }
           }
         }
       } catch (err) {
         console.error('Error restoring session from storage:', err);
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('user');
       } finally {
         setIsLoading(false);
       }
