@@ -38,6 +38,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import adminService from '../../services/adminService';
+import api from '../../services/api';
 
 // Rich Default Sample Customers Data
 const initialCustomersDataset = [
@@ -190,20 +191,18 @@ export default function AdminCustomers() {
   const fetchTotalCustomers = async () => {
     try {
       setLoadingTotalCustomers(true);
-      const apiBaseUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '/api/v1';
 
+      // Use the centralized `api` instance (src/services/api.js) instead of
+      // a raw fetch() with a manually built URL, so this shares the same
+      // baseURL, auth headers, and error handling as the rest of the app.
       let data = null;
       try {
-        const response = await fetch(`${apiBaseUrl}/customers`);
-        if (response.ok) {
-          data = await response.json();
-        }
+        const response = await api.get('/customers');
+        data = response.data;
       } catch (e) {
         try {
-          const response = await fetch(`${apiBaseUrl}/admin/customers`);
-          if (response.ok) {
-            data = await response.json();
-          }
+          const response = await api.get('/admin/customers');
+          data = response.data;
         } catch (err) {}
       }
 

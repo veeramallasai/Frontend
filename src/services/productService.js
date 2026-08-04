@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from './api';
 import { getProductImage } from '../utils/productImageMapper';
 import seedProducts from '../data/products.json';
 import capsicumImg from '../assets/images/capsicum.png';
@@ -19,13 +19,10 @@ import appleImg from '../assets/images/apple.svg';
 import mangoImg from '../assets/images/mango.svg';
 import orangeImg from '../assets/images/orange.svg';
 
-const catalogApi = axios.create({
-  baseURL: import.meta.env.VITE_CATALOG_API_BASE_URL || import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || '/api/v1',
-  timeout: 15000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
+// Uses the centralized `api` axios instance (src/services/api.js) so all
+// catalog requests share the same base URL, auth interceptors, and error
+// handling as the rest of the app. Configure the backend URL via
+// VITE_API_BASE_URL / VITE_API_URL (see .env.example).
 
 const toNumber = (value, fallback = 0) => {
   const parsed = Number(value);
@@ -170,7 +167,7 @@ export const productService = {
     } = filters;
 
     try {
-      const response = await catalogApi.get('/products/filter', {
+      const response = await api.get('/products/filter', {
         params: {
           keyword: keyword || null,
           category: category === 'All' ? null : category,
@@ -204,7 +201,7 @@ export const productService = {
 
   async getProductById(id) {
     try {
-      const response = await catalogApi.get(`/products/${id}`);
+      const response = await api.get(`/products/${id}`);
       return normalizeProduct(response.data?.data || response.data);
     } catch (error) {
       const fallback = seedProducts.find((item) => String(item.id) === String(id));
@@ -226,7 +223,7 @@ export const productService = {
 
   async createProduct(payload) {
     try {
-      const response = await catalogApi.post('/products', payload);
+      const response = await api.post('/products', payload);
       return normalizeProduct(response.data?.data || response.data);
     } catch (error) {
       throw unwrapError(error, 'Failed to create product');
@@ -235,7 +232,7 @@ export const productService = {
 
   async updateProduct(id, payload) {
     try {
-      const response = await catalogApi.put(`/products/${id}`, payload);
+      const response = await api.put(`/products/${id}`, payload);
       return normalizeProduct(response.data?.data || response.data);
     } catch (error) {
       throw unwrapError(error, 'Failed to update product');
@@ -244,7 +241,7 @@ export const productService = {
 
   async deleteProduct(id) {
     try {
-      await catalogApi.delete(`/products/${id}`);
+      await api.delete(`/products/${id}`);
       return true;
     } catch (error) {
       throw unwrapError(error, 'Failed to delete product');

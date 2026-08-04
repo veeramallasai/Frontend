@@ -1,11 +1,16 @@
 import axios from 'axios';
+import { baseURL as apiBaseURL } from './api';
 
-const defaultExportBaseUrl = (import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || '').replace(/\/v1\/?$/, '');
+// The export endpoints live under /api (not /api/v1), so we derive the
+// export base URL from the same centralized VITE_API_BASE_URL / VITE_API_URL
+// configuration used by src/services/api.js, rather than hardcoding a host.
+const defaultExportBaseUrl = apiBaseURL.replace(/\/v1\/?$/, '');
 const exportApi = axios.create({
   baseURL: import.meta.env.VITE_EXPORT_API_BASE_URL || (defaultExportBaseUrl ? `${defaultExportBaseUrl}/api` : '/api'),
   timeout: 60000,
 });
 
+// Reuse the same auth token attachment behavior as the centralized api instance.
 exportApi.interceptors.request.use((config) => {
   const token = localStorage.getItem('token') || sessionStorage.getItem('token');
   if (token) {
