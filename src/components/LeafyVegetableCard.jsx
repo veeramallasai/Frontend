@@ -1,5 +1,6 @@
 import React from 'react';
 import { Eye, Heart, Leaf, Minus, Plus, ShoppingCart } from 'lucide-react';
+import leafyPlaceholderImg from '../assets/images/leafy-vegetables/leafy-placeholder.png';
 
 const LeafyVegetableCard = ({
   product,
@@ -32,8 +33,7 @@ const LeafyVegetableCard = ({
           src={product.image}
           alt={product.name}
           onError={(event) => {
-            event.currentTarget.src =
-              '/src/assets/images/leafy-vegetables/leafy-placeholder.png';
+            event.currentTarget.src = leafyPlaceholderImg;
           }}
           className="h-44 w-full rounded-2xl object-cover transition duration-300 group-hover:scale-105"
         />

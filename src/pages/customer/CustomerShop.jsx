@@ -45,9 +45,10 @@ import {
   catSnacksAi,
 } from '../../assets/images/aiImageAssets';
 import cabbageImg from '../../assets/images/cabbage.png';
+import leafyPlaceholderImg from '../../assets/images/leafy-vegetables/leafy-placeholder.png';
 import './CustomerShop.css';
 
-const LEAFY_PLACEHOLDER_IMAGE = '/src/assets/images/leafy-vegetables/leafy-placeholder.png';
+const LEAFY_PLACEHOLDER_IMAGE = leafyPlaceholderImg;
 
 const IMAGE_DIMENSIONS = {
   heroBanner: { width: 1600, height: 900 },

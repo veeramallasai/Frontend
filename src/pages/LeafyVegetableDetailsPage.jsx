@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { ArrowLeft, Heart, Leaf, Minus, Plus, ShoppingCart } from 'lucide-react';
 import { useCustomer } from '../context/CustomerContext';
 import leafyVegetables from '../data/leafyVegetables';
+import leafyPlaceholderImg from '../assets/images/leafy-vegetables/leafy-placeholder.png';
 
 const WISHLIST_STORAGE_KEY = 'f2h_leafy_wishlist';
 
@@ -131,8 +132,7 @@ const LeafyVegetableDetailsPage = () => {
                 src={product.image}
                 alt={product.name}
                 onError={(event) => {
-                  event.currentTarget.src =
-                    '/src/assets/images/leafy-vegetables/leafy-placeholder.png';
+                  event.currentTarget.src = leafyPlaceholderImg;
                 }}
                 className="h-[360px] w-full rounded-2xl object-cover shadow"
               />
