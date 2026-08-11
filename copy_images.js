@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const srcDir = 'C:\\Users\\VENKATA SAI\\.gemini\\antigravity-ide\\brain\\8f9dd4fe-9a11-49de-9514-2db318a904cd';
+const srcDir = process.env.IMAGE_SRC_DIR || path.join(__dirname, 'temp_images');
 const destDir = path.join(__dirname, 'src', 'assets', 'images', 'leafy-vegetables');
 
 const filesToCopy = [
