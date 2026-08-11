@@ -2,6 +2,7 @@ package com.farmtohome.catalog.repository;
 
 import com.farmtohome.catalog.entity.Product;
 import com.farmtohome.catalog.enums.ProductCategory;
+import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -9,6 +10,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface ProductRepository extends JpaRepository<Product, Long> {
+
+    Optional<Product> findBySlug(String slug);
 
     Page<Product> findByProductNameContainingIgnoreCase(String productName, Pageable pageable);
 

@@ -1,168 +1,273 @@
 import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, Mail, Phone, Lock, ClipboardCheck } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import { User, Mail, Phone, Lock, Eye, EyeOff, UserCheck, ShieldCheck } from 'lucide-react';
+import { authService } from '../../services/authService';
 import AuthLayout from '../../components/auth/AuthLayout';
 import Input from '../../components/common/Input';
 import Select from '../../components/common/Select';
 import Button from '../../components/common/Button';
-
-// Validation Schema using Zod
-const registerSchema = z.object({
-  firstName: z.string().min(1, 'First name is required'),
-  lastName: z.string().min(1, 'Last name is required'),
-  email: z.string().min(1, 'Email is required').email('Please enter a valid email address'),
-  phone: z.string().regex(/^[+]?[0-9]{10,15}$/, 'Phone number must be 10-15 digits without spaces or hyphens'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-  confirmPassword: z.string().min(8, 'Please confirm your password'),
-  role: z.enum(['farmer', 'customer', 'admin'], { required_error: 'Please select a role' }),
-  acceptTerms: z.literal(true, {
-    errorMap: () => ({ message: 'You must accept the terms & conditions' }),
-  }),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
-});
+import toast from 'react-hot-toast';
 
 const Register = () => {
-  const [loading, setLoading] = useState(false);
-  const { registerUser } = useAuth();
-  const navigate = useNavigate();
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm({
-    resolver: zodResolver(registerSchema),
-    defaultValues: {
-      firstName: '',
-      lastName: '',
-      email: '',
-      phone: '',
-      password: '',
-      confirmPassword: '',
-      role: 'farmer',
-      acceptTerms: false,
-    }
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phoneNumber: '',
+    role: 'CUSTOMER',
+    password: '',
+    confirmPassword: '',
+    termsAccepted: false,
   });
 
-  const onSubmit = async (data) => {
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState({});
+
+  const navigate = useNavigate();
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
+    if (fieldErrors[name]) {
+      setFieldErrors((prev) => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const validateForm = () => {
+    const errors = {};
+
+    if (!formData.firstName.trim() || formData.firstName.trim().length < 2) {
+      errors.firstName = 'First name must contain at least 2 characters.';
+    }
+
+    if (!formData.lastName.trim() || formData.lastName.trim().length < 2) {
+      errors.lastName = 'Last name must contain at least 2 characters.';
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!formData.email.trim() || !emailRegex.test(formData.email.trim())) {
+      errors.email = 'Please enter a valid email address.';
+    }
+
+    const phoneClean = formData.phoneNumber.trim().replace(/\D/g, '');
+    if (!phoneClean || phoneClean.length !== 10) {
+      errors.phoneNumber = 'Phone number must contain exactly 10 digits.';
+    }
+
+    // Password validation: >= 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 special char
+    const pwd = formData.password;
+    if (!pwd || pwd.length < 8) {
+      errors.password = 'Password must be at least 8 characters long.';
+    } else if (!/[A-Z]/.test(pwd)) {
+      errors.password = 'Password must contain at least one uppercase letter.';
+    } else if (!/[a-z]/.test(pwd)) {
+      errors.password = 'Password must contain at least one lowercase letter.';
+    } else if (!/[0-9]/.test(pwd)) {
+      errors.password = 'Password must contain at least one number.';
+    } else if (!/[!@#$%^&*(),.?":{}|<>]/.test(pwd)) {
+      errors.password = 'Password must contain at least one special character.';
+    }
+
+    if (formData.confirmPassword !== formData.password) {
+      errors.confirmPassword = 'Passwords do not match.';
+    }
+
+    if (!formData.termsAccepted) {
+      errors.termsAccepted = 'You must accept the Terms of Service and Privacy Policies.';
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateForm()) {
+      toast.error('Please fix the errors before submitting.');
+      return;
+    }
+
     setLoading(true);
     try {
-      await registerUser(data);
-      // Success. Redirect to OTP verification for new accounts
-      navigate('/verify-otp', { state: { email: data.email, role: data.role, step: 'register' } });
+      const payload = {
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
+        email: formData.email.trim().toLowerCase(),
+        phoneNumber: formData.phoneNumber.trim().replace(/\D/g, ''),
+        password: formData.password,
+        role: formData.role || 'CUSTOMER',
+      };
+
+      await authService.registerCustomer(payload);
+      sessionStorage.setItem('pendingVerificationEmail', payload.email);
+      toast.success('Registration successful. OTP sent to your email.');
+      navigate('/customer/verify-otp', { state: { email: payload.email } });
     } catch (err) {
-      console.error('Registration submission error:', err);
+      console.error('[Registration Error]:', err);
+      const message =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        err.message ||
+        'Registration failed. Please try again.';
+
+      if (message.toLowerCase().includes('email')) {
+        setFieldErrors((prev) => ({ ...prev, email: 'Email is already registered.' }));
+      } else if (message.toLowerCase().includes('phone')) {
+        setFieldErrors((prev) => ({ ...prev, phoneNumber: 'Phone number is already registered.' }));
+      }
+      toast.error(message);
     } finally {
       setLoading(false);
     }
   };
 
   const roleOptions = [
-    { value: 'farmer', label: 'Farmer / Producer' },
-    { value: 'customer', label: 'Customer / Consumer' },
-    { value: 'admin', label: 'Administrator' }
+    { value: 'CUSTOMER', label: 'Customer' },
+    { value: 'FARMER', label: 'Farmer / Producer' },
   ];
 
   return (
     <AuthLayout title="Create Account" subtitle="Join our farm-to-table network">
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        {/* Name Fields */}
-        <div className="grid grid-cols-2 gap-4">
-          <Input
-            label="First Name"
-            type="text"
-            placeholder="e.g. John"
-            icon={User}
-            error={errors.firstName}
-            {...register('firstName')}
-          />
-          <Input
-            label="Last Name"
-            type="text"
-            placeholder="e.g. Doe"
-            icon={User}
-            error={errors.lastName}
-            {...register('lastName')}
-          />
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* First & Last Name (2 columns matching screenshot) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <Input
+              label="FIRST NAME"
+              type="text"
+              name="firstName"
+              placeholder="e.g. John"
+              icon={User}
+              value={formData.firstName}
+              onChange={handleChange}
+              error={fieldErrors.firstName}
+              required
+            />
+          </div>
+          <div>
+            <Input
+              label="LAST NAME"
+              type="text"
+              name="lastName"
+              placeholder="e.g. Doe"
+              icon={User}
+              value={formData.lastName}
+              onChange={handleChange}
+              error={fieldErrors.lastName}
+              required
+            />
+          </div>
         </div>
 
-        {/* Contact Fields */}
+        {/* Email Address */}
         <Input
-          label="Email Address"
+          label="EMAIL ADDRESS"
           type="email"
+          name="email"
           placeholder="e.g. johndoe@farm.com"
           icon={Mail}
-          error={errors.email}
-          {...register('email')}
+          value={formData.email}
+          onChange={handleChange}
+          error={fieldErrors.email}
+          required
         />
 
+        {/* Phone Number */}
         <Input
-          label="Phone Number"
+          label="PHONE NUMBER"
           type="tel"
-          placeholder="e.g. 555-123-4567"
+          name="phoneNumber"
+          placeholder="e.g. 9876543210"
           icon={Phone}
-          error={errors.phone}
-          {...register('phone')}
+          value={formData.phoneNumber}
+          onChange={handleChange}
+          error={fieldErrors.phoneNumber}
+          required
         />
 
-        {/* Role dropdown */}
+        {/* Register As Dropdown */}
         <Select
-          label="Register As"
-          icon={ClipboardCheck}
+          label="REGISTER AS"
+          name="role"
+          icon={UserCheck}
           options={roleOptions}
-          error={errors.role}
-          {...register('role')}
+          value={formData.role}
+          onChange={handleChange}
         />
 
-        {/* Passwords */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Input
-            label="Password"
-            type="password"
-            placeholder="••••••••"
-            icon={Lock}
-            error={errors.password}
-            {...register('password')}
-          />
-          <Input
-            label="Confirm Password"
-            type="password"
-            placeholder="••••••••"
-            icon={Lock}
-            error={errors.confirmPassword}
-            {...register('confirmPassword')}
-          />
+        {/* Password & Confirm Password (2 columns matching screenshot) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="relative">
+            <Input
+              label="PASSWORD"
+              type={showPassword ? 'text' : 'password'}
+              name="password"
+              placeholder="••••••••"
+              icon={Lock}
+              value={formData.password}
+              onChange={handleChange}
+              error={fieldErrors.password}
+              required
+            />
+            <button
+              type="button"
+              className="absolute right-3 top-[38px] text-slate-400 hover:text-slate-600 focus:outline-none"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
+
+          <div className="relative">
+            <Input
+              label="CONFIRM PASSWORD"
+              type={showConfirmPassword ? 'text' : 'password'}
+              name="confirmPassword"
+              placeholder="••••••••"
+              icon={Lock}
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              error={fieldErrors.confirmPassword}
+              required
+            />
+            <button
+              type="button"
+              className="absolute right-3 top-[38px] text-slate-400 hover:text-slate-600 focus:outline-none"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            >
+              {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
         </div>
 
-        {/* Accept terms checkbox */}
-        <div className="flex flex-col text-left py-1.5 select-none">
-          <label className="flex items-start text-xs font-semibold text-slate-500 hover:text-slate-800 cursor-pointer">
+        {/* Terms Checkbox */}
+        <div className="pt-2">
+          <label className="flex items-start text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-800 cursor-pointer">
             <input
               type="checkbox"
-              className="mr-2.5 rounded border-slate-300 text-primary focus:ring-primary w-4 h-4 mt-0.5"
-              {...register('acceptTerms')}
+              name="termsAccepted"
+              className="mt-0.5 mr-2 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4 shrink-0"
+              checked={formData.termsAccepted}
+              onChange={handleChange}
             />
             <span>
               I accept the{' '}
-              <a href="#" className="text-primary hover:underline">
+              <a href="#terms" className="text-emerald-600 font-bold hover:underline">
                 Terms of Service
               </a>{' '}
               and{' '}
-              <a href="#" className="text-primary hover:underline">
+              <a href="#privacy" className="text-emerald-600 font-bold hover:underline">
                 Privacy Policies
               </a>
             </span>
           </label>
-          {errors.acceptTerms && (
-            <span className="text-xs text-red-500 mt-1 font-medium">
-              {errors.acceptTerms.message}
-            </span>
+          {fieldErrors.termsAccepted && (
+            <p className="text-xs text-rose-500 mt-1 font-semibold">{fieldErrors.termsAccepted}</p>
           )}
         </div>
 
@@ -170,19 +275,19 @@ const Register = () => {
         <Button
           type="submit"
           variant="gradient"
-          className="w-full py-3.5 mt-4"
+          className="w-full py-3.5 mt-6 shadow-md"
           isLoading={loading}
         >
           Sign Up
         </Button>
       </form>
 
-      {/* Redirect back to Login */}
+      {/* Login Redirect */}
       <p className="text-sm font-medium text-slate-500 text-center select-none mt-6">
         Already have an account?{' '}
         <Link
-          to="/login"
-          className="text-primary hover:text-primary-dark font-semibold transition-colors"
+          to="/customer/login"
+          className="text-emerald-600 hover:text-emerald-700 font-bold transition-colors"
         >
           Sign In
         </Link>

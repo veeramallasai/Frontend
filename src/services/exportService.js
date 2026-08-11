@@ -1,26 +1,6 @@
-import axios from 'axios';
+import api from './api';
 
-const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || 'https://farmtohome-production-ca90.up.railway.app').replace(/\/+$/, '');
-const exportApi = axios.create({
-  baseURL: apiBaseUrl,
-  timeout: 60000,
-});
-
-exportApi.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  if (config.url && !config.url.startsWith('http://') && !config.url.startsWith('https://')) {
-    let url = config.url.trim();
-    if (!url.startsWith('/')) url = '/' + url;
-    if (!url.startsWith('/api/')) {
-      url = `/api${url}`;
-    }
-    config.url = url.replace(/^\/api\/api\//, '/api/');
-  }
-  return config;
-});
+const exportApi = api;
 
 const DATE_FORMAT_OPTIONS = {
   year: 'numeric',

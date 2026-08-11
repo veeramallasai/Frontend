@@ -1,94 +1,23 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import api from '../services/api';
 import { useAuth } from './AuthContext';
-import productsData from '../data/products.json';
 import { getProductImage } from '../utils/productImageMapper';
-
-import capsicumImg from '../assets/images/capsicum.png';
-import ladiesFingerImg from '../assets/images/okra.png';
-import brinjalImg from '../assets/images/brinjal.png';
-import bottleGourdImg from '../assets/images/bottle_gourd.png';
-import tomatoImg from '../assets/images/tomato.png';
-import potatoImg from '../assets/images/potato.png';
-import onionImg from '../assets/images/onion.png';
-import carrotImg from '../assets/images/carrot.png';
-import cabbageImg from '../assets/images/cabbage.png';
-import cauliflowerImg from '../assets/images/cauliflower.png';
-import greenChilliImg from '../assets/images/green_chilli.png';
-import cucumberImg from '../assets/images/cucumber.png';
-import defaultVegImg from '../assets/images/default_veg.png';
+import productService from '../services/productService';
 
 const CustomerContext = createContext(null);
 const GUEST_CART_STORAGE_KEY = 'f2h_guest_cart';
-
-const defaultSavedAddresses = [
-  {
-    id: 'saved-1',
-    title: 'HOME',
-    name: 'Home',
-    line1: 'House #102, Lakshmipuram 1st Lane',
-    city: 'Guntur',
-    state: 'Andhra Pradesh',
-    pincode: '522007',
-    phone: '9876543210',
-    isDefault: true,
-  },
-  {
-    id: 'saved-2',
-    title: 'WORK',
-    name: 'Office',
-    line1: 'IT Park, Phase 2, Ring Road',
-    city: 'Guntur',
-    state: 'Andhra Pradesh',
-    pincode: '522002',
-    phone: '9876543210',
-    isDefault: false,
-  },
-];
-
-const defaultInitialOrders = [
-  {
-    id: 8623,
-    orderNumber: 'FTH-86CT3',
-    status: 'PLACED',
-    paymentMethod: 'UPI',
-    createdAt: new Date().toLocaleString(),
-    total: 175.00,
-    totalAmount: 175.00,
-    items: [
-      {
-        id: 'ord-item-1',
-        productName: 'Organic Tomatoes',
-        name: 'Organic Tomatoes',
-        quantity: 2,
-        price: 45,
-        unitPrice: 45,
-        image: 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?auto=format&fit=crop&w=600&q=80',
-        unit: 'kg'
-      },
-      {
-        id: 'ord-item-2',
-        productName: 'Fresh Capsicum',
-        name: 'Fresh Capsicum',
-        quantity: 1,
-        price: 85.5,
-        unitPrice: 85.5,
-        image: 'https://images.unsplash.com/photo-1563565375-f3fdfdbefa83?auto=format&fit=crop&w=600&q=80',
-        unit: 'kg'
-      }
-    ]
-  }
-];
 
 export const CustomerProvider = ({ children }) => {
   const [products, setProducts] = useState([]);
   const [cart, setCart] = useState([]);
   const [wishlist, setWishlist] = useState([]);
-  const [addresses, setAddresses] = useState(defaultSavedAddresses);
-  const [orders, setOrders] = useState(defaultInitialOrders);
-  const [selectedAddressId, setSelectedAddressId] = useState('saved-1');
+  const [addresses, setAddresses] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [selectedAddressId, setSelectedAddressId] = useState('');
   const { user, token } = useAuth();
+  const isBootstrappingCustomerDataRef = useRef(false);
+  const lastBackendNetworkWarningAtRef = useRef(0);
 
 
   const hasStoredSessionToken = () => {
@@ -125,6 +54,16 @@ export const CustomerProvider = ({ children }) => {
   };
 
   const isGuestCartItemId = (value) => String(value || '').startsWith('guest-');
+  const isNetworkConnectivityIssue = (error) => !error?.response;
+
+  const warnBackendUnavailable = (source, error) => {
+    const now = Date.now();
+    if (now - lastBackendNetworkWarningAtRef.current < 5000) {
+      return;
+    }
+    lastBackendNetworkWarningAtRef.current = now;
+    console.warn(`[CustomerContext] Backend unavailable while loading ${source}:`, error?.message);
+  };
 
   const isBackendCompatibleProductId = (value) => {
     const id = String(value || '').trim();
@@ -149,7 +88,7 @@ export const CustomerProvider = ({ children }) => {
               id: `guest-${product.id}`,
               productId: product.id,
               name: product.name,
-              price: Number(product.price || 0),
+              price: Number(product.sellingPrice || product.price || 0),
               quantity: qty,
               image: getSafeImageUrl(product.image || product.imageUrl, getImageForProduct(product.name, product.category)),
               unit: product.unit || 'kg'
@@ -191,60 +130,59 @@ export const CustomerProvider = ({ children }) => {
   };
 
 
+  const [productsLoading, setProductsLoading] = useState(false);
+  const [productsError, setProductsError] = useState(null);
+
   const fetchProducts = async () => {
+    setProductsLoading(true);
+    setProductsError(null);
     try {
       const response = await api.get('/products');
-      // Format backend products to match frontend properties
-      const mappedProducts = (response.data.data || []).map((p, idx) => {
-        const categoryName = p.category 
-          ? (typeof p.category === 'object' ? p.category.name : p.category) 
-          : 'Vegetables';
-        return {
-          id: p.id,
-          name: p.name,
-          category: categoryName,
-          price: p.price,
-          rating: 4.5 + (idx % 5) * 0.1, // simulated rating
-          unit: p.unit ? p.unit.toLowerCase() : 'kg',
-          image: getProductImage(p.name, categoryName, p.imageUrl),
-          description: p.description || 'Fresh organic product from certified farmers.',
-        };
-      });
-
-      let customProds = [];
-      let deletedIds = [];
-      try {
-        customProds = JSON.parse(localStorage.getItem('f2h_custom_products') || '[]');
-        deletedIds = JSON.parse(localStorage.getItem('f2h_deleted_product_ids') || '[]');
-      } catch (e) {}
-
-      const combined = [...customProds, ...mappedProducts].filter(p => !deletedIds.includes(String(p.id)));
-      setProducts(combined);
+      const rawItems = response.data?.data || response.data?.products || response.data || [];
+      if (Array.isArray(rawItems) && rawItems.length > 0) {
+        const mappedProducts = rawItems.map((p, idx) => {
+          const categoryName = p.category 
+            ? (typeof p.category === 'object' ? p.category.name : p.category) 
+            : 'Vegetables';
+          const sellingPrice = Number(p.sellingPrice ?? p.price ?? 0);
+          const originalPrice = Number(p.originalPrice ?? sellingPrice);
+          const stockQuantity = Number(p.stockQuantity ?? p.stock ?? p.quantity ?? 50);
+          return {
+            id: p.id,
+            name: p.productName || p.name,
+            category: categoryName,
+            price: sellingPrice,
+            originalPrice,
+            sellingPrice,
+            discountPercentage: Number(p.discountPercentage ?? (originalPrice > 0 ? Math.max(0, Math.round((1 - sellingPrice / originalPrice) * 100)) : 0)),
+            stockQuantity,
+            stockStatus: p.stockStatus || (stockQuantity > 0 ? 'AVAILABLE' : 'OUT_OF_STOCK'),
+            rating: 4.5 + (idx % 5) * 0.1,
+            unit: p.unit ? String(p.unit).toLowerCase() : 'kg',
+            image: getProductImage(p.productName || p.name, categoryName, p.imageUrl),
+            imageUrl: p.imageUrl,
+            imageAltText: p.imageAltText || p.productName || p.name,
+            description: p.description || 'Fresh organic product from certified farmers.',
+            status: p.status || 'Active',
+            isOrganic: Boolean(p.isOrganic),
+            isPreOrder: Boolean(p.isPreOrder),
+          };
+        });
+        setProducts(mappedProducts);
+      }
     } catch (err) {
-      console.warn('Backend API timeout/unavailable, loading local products dataset fallback.');
-      const localProducts = (productsData || []).map((p, idx) => {
-        const categoryName = p.category || 'Vegetables';
-        return {
-          id: p.id,
-          name: p.name,
-          category: categoryName,
-          price: p.price,
-          rating: p.rating || 4.5,
-          unit: p.unit || 'kg',
-          image: getProductImage(p.name, categoryName, p.imageUrl),
-          description: p.description || 'Fresh organic product from certified farmers.',
-        };
-      });
-
-      let customProds = [];
-      let deletedIds = [];
+      console.warn('Backend API request notice:', err?.message || err);
       try {
-        customProds = JSON.parse(localStorage.getItem('f2h_custom_products') || '[]');
-        deletedIds = JSON.parse(localStorage.getItem('f2h_deleted_product_ids') || '[]');
-      } catch (e) {}
-
-      const combined = [...customProds, ...localProducts].filter(p => !deletedIds.includes(String(p.id)));
-      setProducts(combined);
+        const fallbackCatalog = await productService.getAllActiveProducts();
+        if (Array.isArray(fallbackCatalog) && fallbackCatalog.length > 0) {
+          setProducts(fallbackCatalog);
+        }
+      } catch (fallbackErr) {
+        console.warn('Fallback catalog notice:', fallbackErr?.message);
+        setProducts((prev) => (Array.isArray(prev) && prev.length > 0 ? prev : []));
+      }
+    } finally {
+      setProductsLoading(false);
     }
   };
 
@@ -253,7 +191,7 @@ export const CustomerProvider = ({ children }) => {
   };
 
   const fetchCart = async () => {
-    if (!token) return;
+    if (!token) return true;
     try {
       const response = await api.get('/cart/items');
       const items = (response.data.data || []).map(item => ({
@@ -266,25 +204,37 @@ export const CustomerProvider = ({ children }) => {
         unit: 'kg'
       }));
       setCart(items);
+      return true;
     } catch (err) {
+      if (isNetworkConnectivityIssue(err)) {
+        warnBackendUnavailable('cart', err);
+        return false;
+      }
       console.error('Failed to fetch cart:', err);
+      return true;
     }
   };
 
   const fetchWishlist = async () => {
-    if (!token) return;
+    if (!token) return true;
     try {
       const response = await api.get('/wishlist');
       const items = response.data.data || [];
       const productIds = items.map((item) => item.productId);
       setWishlist(productIds);
+      return true;
     } catch (err) {
+      if (isNetworkConnectivityIssue(err)) {
+        warnBackendUnavailable('wishlist', err);
+        return false;
+      }
       console.error('Failed to fetch wishlist:', err);
+      return true;
     }
   };
 
   const fetchAddresses = async () => {
-    if (!token) return;
+    if (!token) return true;
     try {
       const response = await api.get('/customers/address');
       const fetchedAddresses = (response.data.data || []).map(addr => ({
@@ -303,13 +253,19 @@ export const CustomerProvider = ({ children }) => {
         const def = fetchedAddresses.find(a => a.isDefault) || fetchedAddresses[0];
         if (def) setSelectedAddressId(def.id);
       }
+      return true;
     } catch (err) {
+      if (isNetworkConnectivityIssue(err)) {
+        warnBackendUnavailable('addresses', err);
+        return false;
+      }
       console.error('Failed to fetch addresses:', err);
+      return true;
     }
   };
 
   const fetchOrders = async () => {
-    if (!token) return;
+    if (!token) return true;
     try {
       const response = await api.get('/orders');
       const payload = response?.data;
@@ -339,28 +295,77 @@ export const CustomerProvider = ({ children }) => {
         }));
         setOrders(orderList);
       }
+      return true;
     } catch (err) {
+      if (isNetworkConnectivityIssue(err)) {
+        warnBackendUnavailable('orders', err);
+        return false;
+      }
       console.error('Failed to fetch orders:', err);
+      return true;
     }
   };
 
   useEffect(() => {
     fetchProducts();
+
+    const handleProductsChanged = () => fetchProducts();
+    window.addEventListener('admin_products_changed', handleProductsChanged);
+    return () => {
+      window.removeEventListener('admin_products_changed', handleProductsChanged);
+    };
+  }, []);
+
+  useEffect(() => {
     if (token && isCustomerRole(user?.role)) {
-      fetchCart();
-      fetchWishlist();
-      fetchAddresses();
-      fetchOrders();
+      if (isBootstrappingCustomerDataRef.current) {
+        return;
+      }
+
+      isBootstrappingCustomerDataRef.current = true;
+      const bootstrapCustomerData = async () => {
+        try {
+          const cartOk = await fetchCart();
+          if (!cartOk) return;
+
+          const wishlistOk = await fetchWishlist();
+          if (!wishlistOk) return;
+
+          const addressesOk = await fetchAddresses();
+          if (!addressesOk) return;
+
+          await fetchOrders();
+        } finally {
+          isBootstrappingCustomerDataRef.current = false;
+        }
+      };
+
+      void bootstrapCustomerData();
     } else {
       setCart(loadGuestCart());
       setWishlist([]);
       setAddresses([]);
       setOrders([]);
     }
-  }, [token, user]);
+
+    const handleOrdersChanged = () => {
+      if (token && isCustomerRole(user?.role)) {
+        fetchOrders();
+      }
+    };
+    window.addEventListener('admin_orders_changed', handleOrdersChanged);
+    return () => {
+      window.removeEventListener('admin_orders_changed', handleOrdersChanged);
+    };
+  }, [token, user?.role]);
 
 
   const addToCart = async (product, qty = 1) => {
+    const availableStock = Number(product?.stockQuantity ?? product?.stock ?? 0);
+    if (availableStock > 0 && qty > availableStock) {
+      toast.error(`Only ${availableStock} units available`);
+      return;
+    }
     if (!isSessionAuthenticated() || !isBackendCompatibleProductId(product?.id)) {
       addToGuestCart(product, qty);
       toast.success(`${product.name} added to cart`);
@@ -521,7 +526,7 @@ export const CustomerProvider = ({ children }) => {
       toast.error('Your cart is empty');
       return null;
     }
-    const targetAddressId = addressIdOverride || selectedAddressId;
+    const targetAddressId = addressIdOverride || selectedAddressId || (addresses && addresses.length > 0 ? addresses[0].id : 'addr-1');
     if (!targetAddressId) {
       toast.error('Please select a shipping address');
       return null;
@@ -600,6 +605,7 @@ export const CustomerProvider = ({ children }) => {
       setOrders((prev) => [formattedNewOrder, ...prev.filter(o => String(o.id) !== String(formattedNewOrder.id))]);
       setCart([]);
       persistGuestCart([]);
+      window.dispatchEvent(new CustomEvent('admin_orders_changed', { detail: { source: 'customer-place-order', orderId: placedOrder?.id } }));
       toast.success('Order placed successfully!');
       return formattedNewOrder;
     } catch (err) {
@@ -626,6 +632,7 @@ export const CustomerProvider = ({ children }) => {
         await api.patch(`/orders/${orderId}/${endpoint}`);
         toast.success(`Order advanced to next stage`);
         await fetchOrders();
+        window.dispatchEvent(new CustomEvent('admin_orders_changed', { detail: { source: 'customer-order-advance', orderId } }));
       }
     } catch (err) {
       toast.error('Failed to advance order status');
@@ -643,6 +650,7 @@ export const CustomerProvider = ({ children }) => {
         prev.map((o) => (o.id === orderId ? { ...o, status: 'CANCELLED' } : o))
       );
       await fetchOrders();
+      window.dispatchEvent(new CustomEvent('admin_orders_changed', { detail: { source: 'customer-order-cancel', orderId } }));
     } catch (err) {
       const message = err?.response?.data?.message || err?.message || 'Failed to cancel order';
       toast.error(message);
@@ -672,15 +680,11 @@ export const CustomerProvider = ({ children }) => {
           imageUrl: newProductObj.image
         });
       } catch (err) {
-        console.warn('Backend API save failed/fallback, persisting product locally.');
+        throw err;
       }
 
-      setProducts((prev) => [newProductObj, ...prev]);
-
-      try {
-        const storedCustom = JSON.parse(localStorage.getItem('f2h_custom_products') || '[]');
-        localStorage.setItem('f2h_custom_products', JSON.stringify([newProductObj, ...storedCustom]));
-      } catch (e) {}
+      await fetchProducts();
+      window.dispatchEvent(new CustomEvent('admin_products_changed', { detail: { source: 'customer-add-product', productId: newProductObj.id } }));
 
       toast.success(`"${newProductObj.name}" added to the shop!`);
       return newProductObj;
@@ -695,22 +699,11 @@ export const CustomerProvider = ({ children }) => {
       try {
         await api.delete(`/products/${productId}`);
       } catch (err) {
-        console.warn('Backend API delete fallback, deleting product locally.');
+        throw err;
       }
 
-      setProducts((prev) => prev.filter((p) => String(p.id) !== String(productId)));
-
-      try {
-        const deletedIds = JSON.parse(localStorage.getItem('f2h_deleted_product_ids') || '[]');
-        if (!deletedIds.includes(String(productId))) {
-          deletedIds.push(String(productId));
-          localStorage.setItem('f2h_deleted_product_ids', JSON.stringify(deletedIds));
-        }
-
-        const storedCustom = JSON.parse(localStorage.getItem('f2h_custom_products') || '[]');
-        const updatedCustom = storedCustom.filter(p => String(p.id) !== String(productId));
-        localStorage.setItem('f2h_custom_products', JSON.stringify(updatedCustom));
-      } catch (e) {}
+      await fetchProducts();
+      window.dispatchEvent(new CustomEvent('admin_products_changed', { detail: { source: 'customer-delete-product', productId } }));
 
       toast.success('Material removed from shop successfully!');
     } catch (err) {
@@ -721,7 +714,10 @@ export const CustomerProvider = ({ children }) => {
 
   const value = useMemo(
     () => ({
-      products,
+      products: Array.isArray(products) ? products : [],
+      productsLoading,
+      productsError,
+      reloadProducts: fetchProducts,
       cart,
       wishlist,
       addresses,
@@ -740,7 +736,7 @@ export const CustomerProvider = ({ children }) => {
       addProduct,
       deleteProduct,
     }),
-    [products, cart, wishlist, addresses, orders, selectedAddressId, cancelOrder]
+    [products, productsLoading, productsError, cart, wishlist, addresses, orders, selectedAddressId, cancelOrder]
   );
 
   return <CustomerContext.Provider value={value}>{children}</CustomerContext.Provider>;

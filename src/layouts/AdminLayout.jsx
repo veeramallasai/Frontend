@@ -82,7 +82,7 @@ const AdminLayout = () => {
     { name: 'Delivery Overview', path: '/admin/deliveries', icon: Truck },
     { name: 'Payments & Payouts', path: '/admin/payments', icon: CreditCard },
     { name: 'Stock & Inventory', path: '/admin/inventory', icon: ShoppingBag },
-    { name: 'Offers & Coupons', path: '/admin/offers', icon: Tags },
+    { name: 'Offers & Coupons', path: '/admin/coupons', icon: Tags },
     { name: 'Banners & Marketing', path: '/admin/banners', icon: ImageIcon },
     { name: 'Customer Reviews', path: '/admin/reviews', icon: MessageSquare },
     { name: 'Notifications', path: '/admin/notifications', icon: Bell },

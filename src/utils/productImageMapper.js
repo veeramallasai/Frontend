@@ -61,9 +61,12 @@ const fruitImageMap = {
   grapes: 'https://images.unsplash.com/photo-1537640538966-79f369143f8f?auto=format&fit=crop&w=600&q=80',
   papaya: 'https://images.unsplash.com/photo-1517260739337-6799d239ce83?auto=format&fit=crop&w=600&q=80',
   banana: 'https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?auto=format&fit=crop&w=600&q=80',
+  'banana yelakki': 'https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?auto=format&fit=crop&w=600&q=80',
+  yelakki: 'https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?auto=format&fit=crop&w=600&q=80',
   'rasthali banana': 'https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?auto=format&fit=crop&w=600&q=80',
   'red banana': 'https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?auto=format&fit=crop&w=600&q=80',
   orange: 'https://images.unsplash.com/photo-1611080626919-7cf5a9dbab5b?auto=format&fit=crop&w=600&q=80',
+  'orange nagpur': 'https://images.unsplash.com/photo-1611080626919-7cf5a9dbab5b?auto=format&fit=crop&w=600&q=80',
   'nagpur orange': 'https://images.unsplash.com/photo-1611080626919-7cf5a9dbab5b?auto=format&fit=crop&w=600&q=80',
   mandarin: 'https://images.unsplash.com/photo-1611080626919-7cf5a9dbab5b?auto=format&fit=crop&w=600&q=80',
   mango: 'https://images.unsplash.com/photo-1553279768-865429fa0078?auto=format&fit=crop&w=600&q=80',
@@ -139,18 +142,68 @@ const fruitImageMap = {
   zucchini: 'https://images.unsplash.com/photo-1598170845058-12ef4a45753b?auto=format&fit=crop&w=600&q=80',
   'red cabbage': 'https://images.unsplash.com/photo-1594282486552-05b4d80fbb9f?auto=format&fit=crop&w=600&q=80',
   squash: 'https://images.unsplash.com/photo-1570586437263-ab629fccc818?auto=format&fit=crop&w=600&q=80',
+  // Dairy & Eggs
+  'toned milk': 'https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=600&q=80',
+  'full cream milk': 'https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=600&q=80',
+  milk: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=600&q=80',
+  curd: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=600&q=80',
+  'greek yogurt': 'https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=600&q=80',
+  yogurt: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=600&q=80',
+  dahi: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=600&q=80',
+  paneer: 'https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?auto=format&fit=crop&w=600&q=80',
+  butter: 'https://images.unsplash.com/photo-1589985270826-4b7bb135bc9d?auto=format&fit=crop&w=600&q=80',
+  'cow ghee': 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&w=600&q=80',
+  ghee: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&w=600&q=80',
+  'fresh cream': 'https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=600&q=80',
+  cream: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=600&q=80',
+  'brown eggs': 'https://images.unsplash.com/photo-1516467508483-a7212febe31a?auto=format&fit=crop&w=600&q=80',
+  'white eggs': 'https://images.unsplash.com/photo-1516467508483-a7212febe31a?auto=format&fit=crop&w=600&q=80',
+  // Cooking Oils & Ghee
+  'sunflower oil': 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=600&q=80',
+  'groundnut oil': 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=600&q=80',
+  'peanut oil': 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=600&q=80',
+  'rice bran oil': 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=600&q=80',
+  'mustard oil': 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=600&q=80',
+  'sesame oil': 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=600&q=80',
+  'gingelly oil': 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=600&q=80',
+  'olive oil': 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=600&q=80',
+  'coconut oil': 'https://images.unsplash.com/photo-1544378730-8b5104b18790?auto=format&fit=crop&w=600&q=80',
+  oil: 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=600&q=80',
   asparagus: 'https://images.unsplash.com/photo-1515471209610-e3f170537703?auto=format&fit=crop&w=600&q=80',
 };
 
 // Sort fruit keys by string length descending so compound words like "pineapple" are matched before "apple"
 const sortedFruitKeys = Object.keys(fruitImageMap).sort((a, b) => b.length - a.length);
 
+const buildGeneratedProductImage = (name = '', category = '') => {
+  return 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80';
+};
+
 const isUsableImageUrl = (value) => {
   if (typeof value !== 'string') return false;
-  const trimmed = value.trim();
+  const trimmed = value.trim().toLowerCase();
   if (!trimmed) return false;
 
-  if (trimmed.startsWith('/uploads/') || trimmed.startsWith('uploads/') || trimmed.startsWith('data:image/') || trimmed.startsWith('blob:')) {
+  // Reject backend canvas-generated placeholders and dummy images so AI food photos are used instead
+  if (
+    trimmed.includes('product-images') ||
+    trimmed.includes('generated') ||
+    trimmed.includes('placeholder') ||
+    trimmed.includes('dummy') ||
+    trimmed.includes('no-image') ||
+    trimmed.includes('not-found')
+  ) {
+    return false;
+  }
+
+  if (
+    trimmed.startsWith('/')
+    || trimmed.startsWith('./')
+    || trimmed.startsWith('../')
+    || trimmed.startsWith('uploads/')
+    || trimmed.startsWith('data:image/')
+    || trimmed.startsWith('blob:')
+  ) {
     return true;
   }
 
@@ -159,14 +212,42 @@ const isUsableImageUrl = (value) => {
     const protocol = String(parsed.protocol || '').toLowerCase();
     const host = String(parsed.hostname || '').toLowerCase();
     const path = String(parsed.pathname || '').toLowerCase();
+    const fullUrl = `${host}${path}`;
 
     if (protocol !== 'http:' && protocol !== 'https:') return false;
 
-    const blockedHosts = ['google.com', 'www.google.com', 'maps.google.com', 'gstatic.com', 'picsum.photos'];
+    const blockedHosts = ['google.com', 'www.google.com', 'maps.google.com', 'gstatic.com'];
     const blockedHost = blockedHosts.some((entry) => host === entry || host.endsWith(`.${entry}`));
     const isGoogleImgResult = path.includes('/imgres');
 
-    return !blockedHost && !isGoogleImgResult;
+    // Ignore known placeholder/dummy image generators so we can use real mapped product photos.
+    const placeholderHostPatterns = [
+      'placehold.co',
+      'via.placeholder.com',
+      'dummyimage.com',
+      'fakeimg.pl',
+      'placekitten.com',
+      'loremflickr.com',
+      'lorempixel.com',
+      'robohash.org',
+      'picsum.photos',
+    ];
+    const placeholderPathPatterns = [
+      'placeholder',
+      'dummy',
+      'no-image',
+      'no_image',
+      'not-found',
+      'not_found',
+      'image-not-available',
+      'generated',
+      '/images/generated',
+    ];
+
+    const isPlaceholderHost = placeholderHostPatterns.some((entry) => host === entry || host.endsWith(`.${entry}`));
+    const isPlaceholderPath = placeholderPathPatterns.some((entry) => fullUrl.includes(entry));
+
+    return !blockedHost && !isGoogleImgResult && !isPlaceholderHost && !isPlaceholderPath;
   } catch {
     return false;
   }
@@ -178,10 +259,22 @@ export const getProductImage = (name = '', category = '', customUrl = '') => {
   // 1. Prefer valid custom image URL from backend/seed data.
   if (customUrl && isUsableImageUrl(customUrl)) {
     const trimmed = customUrl.trim();
-    const apiBase = (import.meta.env.VITE_API_BASE_URL || 'https://farmtohome-production-ca90.up.railway.app').replace(/\/+$/, '');
-    if (trimmed.startsWith('/uploads/')) {
+    const apiBase = (import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8082/api/v1')
+      .replace(/\/+$/, '')
+      .replace(/\/api(\/v1)?$/, '');
+
+    if (trimmed.startsWith('/')) {
       return apiBase ? `${apiBase}${trimmed}` : trimmed;
     }
+
+    if (trimmed.startsWith('./')) {
+      return apiBase ? `${apiBase}/${trimmed.slice(2)}` : trimmed.slice(1);
+    }
+
+    if (trimmed.startsWith('../')) {
+      return apiBase ? `${apiBase}/${trimmed.replace(/^\.\.\//, '')}` : trimmed;
+    }
+
     if (trimmed.startsWith('uploads/')) {
       return apiBase ? `${apiBase}/${trimmed}` : `/${trimmed}`;
     }
@@ -193,14 +286,17 @@ export const getProductImage = (name = '', category = '', customUrl = '') => {
     return fruitImageMap['dragon fruit'];
   }
 
-  // 2. Match specific fruit names (longest name first to prevent substring collision)
-  for (const key of sortedFruitKeys) {
-    if (n.includes(key)) {
-      return fruitImageMap[key];
-    }
-  }
-
-  // 3. Match vegetable names
+  // 2. Match bundled high-resolution local produce images first
+  if (n.includes('yelakki') || n.includes('banana')) return fruitImageMap['banana'];
+  if (n.includes('apple')) return fruitImageMap['apple'];
+  if (n.includes('orange') || n.includes('nagpur')) return fruitImageMap['orange'];
+  if (n.includes('pomegranate') || n.includes('anar')) return fruitImageMap['pomegranate'];
+  if (n.includes('papaya')) return fruitImageMap['papaya'];
+  if (n.includes('guava')) return fruitImageMap['guava'];
+  if (n.includes('watermelon')) return fruitImageMap['watermelon'];
+  if (n.includes('muskmelon')) return fruitImageMap['muskmelon'];
+  if (n.includes('pineapple')) return fruitImageMap['pineapple'];
+  if (n.includes('mango')) return mangoImg;
   if (n.includes('chilli') || n.includes('chili')) return greenChilliImg;
   if (n.includes('spinach') || n.includes('palak')) return spinachImg;
   if (n.includes('lady finger') || n.includes('okra') || n.includes('bendakaya')) return okraImg;
@@ -228,15 +324,25 @@ export const getProductImage = (name = '', category = '', customUrl = '') => {
   if (n.includes('basil')) return basilImg;
   if (n.includes('bok choy')) return bokChoyImg;
   if (n.includes('celery')) return celeryImg;
-  if (n.includes('mustard')) return mustardGreensImg;
+  if (n.includes('mustard greens') || n.includes('mustard leaves')) return mustardGreensImg;
+
+  // 3. Match extended fruit/vegetable names
+  for (const key of sortedFruitKeys) {
+    if (n.includes(key)) {
+      return fruitImageMap[key];
+    }
+  }
 
   // 4. Fallback by Category
   const cat = String(typeof category === 'object' ? (category?.name || category?.title || '') : category || '').toLowerCase();
+  if (cat.includes('oil')) return 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=600&q=80';
+  if (cat.includes('dairy') || cat.includes('milk')) return 'https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=600&q=80';
+  if (cat.includes('egg')) return 'https://images.unsplash.com/photo-1516467508483-a7212febe31a?auto=format&fit=crop&w=600&q=80';
   if (cat.includes('leafy')) return spinachImg;
   if (cat.includes('fruit')) return mangoImg;
 
   // 5. Default Fallback
-  return defaultVegImg;
+  return buildGeneratedProductImage(name, category);
 };
 
 export const defaultFallbackImage = defaultVegImg;

@@ -65,12 +65,18 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ApiResponse<Object>> handleAuthenticationFailure(Exception ex) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-            .body(ApiResponse.failure("Invalid email/phone number or password.", null));
+            .body(ApiResponse.failure("Invalid email or password", null));
     }
 
     @ExceptionHandler(ExportException.class)
     public ResponseEntity<ApiResponse<Object>> handleExportException(ExportException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            .body(ApiResponse.failure(ex.getMessage(), null));
+    }
+
+    @ExceptionHandler(TooManyOtpRequestsException.class)
+    public ResponseEntity<ApiResponse<Object>> handleTooManyOtpRequests(TooManyOtpRequestsException ex) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
             .body(ApiResponse.failure(ex.getMessage(), null));
     }
 

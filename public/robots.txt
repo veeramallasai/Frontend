@@ -1,0 +1,17 @@
+# robots.txt for Farm to Home
+User-agent: *
+Allow: /
+Allow: /marketplace
+Allow: /customer/shop
+Allow: /catalog
+Allow: /leafy-vegetables
+
+# Disallow private admin & internal API endpoints from search index
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /delivery-partner/dashboard
+Disallow: /api/
+
+# Host and Sitemap locations
+Host: https://farmtohome.com
+Sitemap: https://farmtohome.com/sitemap.xml

@@ -1,0 +1,157 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 750" width="100%" height="100%">
+  <defs>
+    <!-- Gradients -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#f0f7f2"/>
+    </linearGradient>
+    <linearGradient id="groundGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#65a30d"/>
+      <stop offset="50%" stop-color="#4d7c0f"/>
+      <stop offset="100%" stop-color="#3f6212"/>
+    </linearGradient>
+    <linearGradient id="baseSoil" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#854d0e"/>
+      <stop offset="100%" stop-color="#543310"/>
+    </linearGradient>
+    <linearGradient id="roofGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#15803d"/>
+      <stop offset="100%" stop-color="#166534"/>
+    </linearGradient>
+    <linearGradient id="woodGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#b45309"/>
+      <stop offset="100%" stop-color="#78350f"/>
+    </linearGradient>
+    <linearGradient id="badgeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#f8fafc"/>
+    </linearGradient>
+
+    <!-- Filters for 3D depth -->
+    <filter id="dropShadow3D" x="-20%" y="-20%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="28" stdDeviation="24" flood-color="#0f5132" flood-opacity="0.22"/>
+    </filter>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#000000" flood-opacity="0.12"/>
+    </filter>
+  </defs>
+
+  <!-- Ground Base Shadow -->
+  <ellipse cx="500" cy="580" rx="420" ry="120" fill="rgba(21, 128, 61, 0.18)" filter="blur(16px)"/>
+
+  <!-- 3D Isometric Ground Platform -->
+  <g filter="url(#dropShadow3D)">
+    <!-- Base Layer Thickness (Dirt Layer) -->
+    <path d="M 120,400 L 500,590 L 880,400 L 880,440 L 500,630 L 120,440 Z" fill="url(#baseSoil)"/>
+    <path d="M 500,590 L 880,400 L 880,440 L 500,630 Z" fill="#3b230f"/>
+
+    <!-- Green Turf Surface -->
+    <path d="M 500,210 L 880,400 L 500,590 L 120,400 Z" fill="url(#groundGrad)" stroke="#84cc16" stroke-width="4"/>
+    
+    <!-- Inner Grass Texture Hills -->
+    <path d="M 220,380 C 320,320 420,360 500,320 C 580,280 680,340 780,300 L 880,400 L 500,590 L 120,400 Z" fill="#4d7c0f" opacity="0.3"/>
+  </g>
+
+  <!-- Crop Field Rows (Isometric Left) -->
+  <g transform="translate(180, 360) rotate(-15)">
+    <!-- Soil Beds -->
+    <path d="M0,0 L180,-90 L220,-70 L40,20 Z" fill="#713f12" opacity="0.8"/>
+    <path d="M30,30 L210,-60 L250,-40 L70,50 Z" fill="#713f12" opacity="0.8"/>
+    <path d="M60,60 L240,-30 L280,-10 L100,80 Z" fill="#713f12" opacity="0.8"/>
+
+    <!-- Crops (Cabbages & Carrots) -->
+    <circle cx="40" cy="-20" r="10" fill="#22c55e"/>
+    <circle cx="80" cy="-40" r="12" fill="#16a34a"/>
+    <circle cx="120" cy="-60" r="11" fill="#22c55e"/>
+    <circle cx="160" cy="-80" r="10" fill="#15803d"/>
+
+    <circle cx="70" cy="10" r="9" fill="#f97316"/>
+    <circle cx="110" cy="-10" r="11" fill="#f97316"/>
+    <circle cx="150" cy="-30" r="10" fill="#ea580c"/>
+
+    <circle cx="100" cy="40" r="12" fill="#4ade80"/>
+    <circle cx="140" cy="20" r="13" fill="#22c55e"/>
+    <circle cx="180" cy="0" r="11" fill="#16a34a"/>
+  </g>
+
+  <!-- Wooden 100% Organic Sign Board -->
+  <g transform="translate(380, 240)" filter="url(#softShadow)">
+    <rect x="35" y="60" width="10" height="50" fill="#78350f" rx="3"/>
+    <rect x="95" y="60" width="10" height="50" fill="#78350f" rx="3"/>
+    <rect x="10" y="10" width="120" height="60" fill="url(#woodGrad)" rx="8" stroke="#451a03" stroke-width="3"/>
+    <text x="70" y="34" font-family="Plus Jakarta Sans, sans-serif" font-weight="900" font-size="16" fill="#fef3c7" text-anchor="middle">100%</text>
+    <text x="70" y="54" font-family="Plus Jakarta Sans, sans-serif" font-weight="800" font-size="14" fill="#ffffff" text-anchor="middle">Organic</text>
+  </g>
+
+  <!-- 3D Farmhouse / Barn (Top Right) -->
+  <g transform="translate(620, 180)" filter="url(#softShadow)">
+    <!-- House Base -->
+    <path d="M 0,90 L 80,130 L 160,90 L 160,30 L 80,-10 L 0,30 Z" fill="#ffffff"/>
+    <path d="M 80,130 L 160,90 L 160,30 L 80,-10 Z" fill="#e2e8f0"/>
+    <!-- Roof -->
+    <path d="M -10,30 L 80,-18 L 170,30 L 80,75 Z" fill="url(#roofGrad)"/>
+    <path d="M 80,-18 L 170,30 L 160,35 L 80,-10 Z" fill="#14532d"/>
+    <!-- Windows & Door -->
+    <rect x="30" y="55" width="24" height="35" fill="#1e293b" rx="4"/>
+    <rect x="100" y="45" width="28" height="24" fill="#38bdf8" rx="3" stroke="#e2e8f0" stroke-width="2"/>
+    <!-- Silo / Tower -->
+    <path d="M 170,40 L 210,20 L 210,100 L 170,120 Z" fill="#94a3b8"/>
+    <path d="M 170,40 L 210,20 L 190,0 Z" fill="#ef4444"/>
+  </g>
+
+  <!-- Green Farm Tractor (Middle Right) -->
+  <g transform="translate(740, 360)" filter="url(#softShadow)">
+    <!-- Large Back Wheel -->
+    <circle cx="30" cy="40" r="32" fill="#1e293b" stroke="#475569" stroke-width="6"/>
+    <circle cx="30" cy="40" r="14" fill="#e2e8f0"/>
+
+    <!-- Small Front Wheel -->
+    <circle cx="100" cy="52" r="20" fill="#1e293b" stroke="#475569" stroke-width="4"/>
+    <circle cx="100" cy="52" r="8" fill="#e2e8f0"/>
+
+    <!-- Body & Cabin -->
+    <rect x="25" y="0" width="50" height="40" fill="#15803d" rx="6"/>
+    <rect x="65" y="15" width="50" height="30" fill="#22c55e" rx="4"/>
+    <rect x="33" y="6" width="34" height="22" fill="#bae6fd" rx="3"/>
+    <!-- Exhaust Pipe -->
+    <rect x="95" y="-10" width="6" height="25" fill="#334155"/>
+  </g>
+
+  <!-- Trees & White Picket Fence -->
+  <g transform="translate(200, 260)">
+    <!-- Tree 1 -->
+    <circle cx="40" cy="40" r="28" fill="#15803d"/>
+    <circle cx="30" cy="30" r="22" fill="#22c55e"/>
+    <rect x="35" y="60" width="10" height="30" fill="#78350f"/>
+
+    <!-- Fence -->
+    <path d="M 80,100 L 280,200" stroke="#ffffff" stroke-width="6" stroke-linecap="round"/>
+    <path d="M 80,115 L 280,215" stroke="#ffffff" stroke-width="6" stroke-linecap="round"/>
+    <rect x="100" y="85" width="8" height="40" fill="#ffffff" rx="2"/>
+    <rect x="140" y="105" width="8" height="40" fill="#ffffff" rx="2"/>
+    <rect x="180" y="125" width="8" height="40" fill="#ffffff" rx="2"/>
+    <rect x="220" y="145" width="8" height="40" fill="#ffffff" rx="2"/>
+    <rect x="260" y="165" width="8" height="40" fill="#ffffff" rx="2"/>
+  </g>
+
+  <!-- Wooden Vegetable Basket (Foreground Left) -->
+  <g transform="translate(520, 440)" filter="url(#softShadow)">
+    <path d="M 10,30 L 110,30 L 95,80 L 25,80 Z" fill="#b45309" stroke="#78350f" stroke-width="3"/>
+    <!-- Veggies Inside Basket -->
+    <circle cx="35" cy="20" r="16" fill="#ef4444"/> <!-- Tomato -->
+    <circle cx="55" cy="15" r="18" fill="#22c55e"/> <!-- Cabbage -->
+    <circle cx="80" cy="22" r="14" fill="#f97316"/> <!-- Carrot -->
+    <circle cx="45" cy="28" r="12" fill="#eab308"/> <!-- Corn -->
+    <circle cx="70" cy="28" r="15" fill="#a855f7"/> <!-- Eggplant -->
+  </g>
+
+  <!-- Audit Certified Badge Overlay (Foreground Right) -->
+  <g transform="translate(560, 520)" filter="url(#softShadow)">
+    <rect x="0" y="0" width="180" height="52" fill="url(#badgeGrad)" rx="16" stroke="#e2e8f0" stroke-width="2"/>
+    <g transform="translate(14, 12)">
+      <circle cx="14" cy="14" r="14" fill="#dcfce7"/>
+      <path d="M 9,14 L 13,18 L 20,10" stroke="#16a34a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    </g>
+    <text x="50" y="32" font-family="Plus Jakarta Sans, sans-serif" font-weight="900" font-size="15" fill="#0f172a">Audit Certified</text>
+  </g>
+</svg>

@@ -1,6 +1,5 @@
-import axios from 'axios';
+import api from './api';
 import { getProductImage } from '../utils/productImageMapper';
-import seedProducts from '../data/products.json';
 import capsicumImg from '../assets/images/capsicum.png';
 import ladiesFingerImg from '../assets/images/okra.png';
 import brinjalImg from '../assets/images/brinjal.png';
@@ -19,35 +18,39 @@ import appleImg from '../assets/images/apple.svg';
 import mangoImg from '../assets/images/mango.svg';
 import orangeImg from '../assets/images/orange.svg';
 
-const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || 'https://farmtohome-production-ca90.up.railway.app').replace(/\/+$/, '');
-
-const catalogApi = axios.create({
-  baseURL: apiBaseUrl,
-  timeout: 15000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-catalogApi.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  if (config.url && !config.url.startsWith('http://') && !config.url.startsWith('https://')) {
-    let url = config.url.trim();
-    if (!url.startsWith('/')) url = '/' + url;
-    if (!url.startsWith('/api/')) {
-      url = `/api/v1${url}`;
-    }
-    config.url = url.replace(/^\/api\/api\//, '/api/');
-  }
-  return config;
-});
+const catalogApi = api;
+const fallbackCatalogBaseUrl = (import.meta.env.VITE_FALLBACK_API_BASE_URL || import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8082/api/v1')
+  .trim()
+  .replace(/\/+$/, '')
+  .replace(/\/api(\/v1)?$/, '');
 
 const toNumber = (value, fallback = 0) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const API_ORIGIN = (import.meta.env.VITE_API_ORIGIN || import.meta.env.VITE_PROXY_TARGET || import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8082')
+  .trim()
+  .replace(/\/+$/, '')
+  .replace(/\/api(\/v1)?$/, '');
+
+export const FALLBACK_IMAGE = "/images/product-placeholder.svg";
+
+export const resolveImageUrl = (value) => {
+  if (typeof value !== 'string') return '';
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+
+  if (
+    trimmed.startsWith('data:') ||
+    trimmed.startsWith('blob:') ||
+    trimmed.startsWith('http://') ||
+    trimmed.startsWith('https://')
+  ) {
+    return trimmed;
+  }
+
+  return `${API_ORIGIN}${trimmed.startsWith('/') ? trimmed : `/${trimmed}`}`;
 };
 
 const parseCategoryName = (cat) => {
@@ -56,59 +59,71 @@ const parseCategoryName = (cat) => {
   return String(cat);
 };
 
-const pickLocalProductImage = (name, category) => {
-  const normalizedName = String(name || '').toLowerCase();
-
-  if (normalizedName.includes('capsicum')) return capsicumImg;
-  if (normalizedName.includes('ladies finger') || normalizedName.includes('okra')) return ladiesFingerImg;
-  if (normalizedName.includes('brinjal') || normalizedName.includes('eggplant')) return brinjalImg;
-  if (normalizedName.includes('bottle gourd')) return bottleGourdImg;
-  if (normalizedName.includes('tomato')) return tomatoImg;
-  if (normalizedName.includes('potato')) return potatoImg;
-  if (normalizedName.includes('onion')) return onionImg;
-  if (normalizedName.includes('carrot')) return carrotImg;
-  if (normalizedName.includes('cabbage')) return cabbageImg;
-  if (normalizedName.includes('cauliflower')) return cauliflowerImg;
-  if (normalizedName.includes('chilli') || normalizedName.includes('chili')) return greenChilliImg;
-  if (normalizedName.includes('cucumber')) return cucumberImg;
-  if (normalizedName.includes('banana')) return bananaImg;
-  if (normalizedName.includes('apple')) return appleImg;
-  if (normalizedName.includes('mango')) return mangoImg;
-  if (normalizedName.includes('orange')) return orangeImg;
-  if (normalizedName.includes('mosambi') || normalizedName.includes('sweet lime')) return orangeImg;
-  if (normalizedName.includes('citrus')) return orangeImg;
-
-  const normalizedCategory = String(parseCategoryName(category)).toLowerCase();
-  if (normalizedCategory.includes('vegetable')) return defaultVegImg;
-  if (normalizedCategory.includes('fruit')) return mangoImg;
-  return defaultVegImg;
-};
-
-const isHttpUrl = (value) => {
-  if (typeof value !== 'string') return false;
-  const trimmed = value.trim().toLowerCase();
-  return trimmed.startsWith('http://') || trimmed.startsWith('https://');
-};
-
 const resolveCatalogImage = (product) => {
-  return getProductImage(product?.name, product?.category, product?.imageUrl || product?.image);
+  const primaryNestedImage = Array.isArray(product?.images)
+    ? (product.images.find((image) => image?.primaryImage)?.imageUrl || product.images[0]?.imageUrl)
+    : '';
+
+  const apiImage =
+    product?.imageUrl
+    || product?.image_path
+    || product?.imagePath
+    || primaryNestedImage
+    || product?.productImage
+    || product?.thumbnailUrl
+    || product?.thumbnail
+    || product?.primaryImage
+    || product?.image;
+
+  return getProductImage(product?.productName || product?.name, product?.category, resolveImageUrl(apiImage));
 };
 
-const normalizeProduct = (product) => ({
-  id: product.id,
-  name: product.name,
-  category: parseCategoryName(product.category),
-  description: product.description,
-  price: toNumber(product.price),
-  unit: product.unit,
-  stockQuantity: toNumber(product.stockQuantity),
-  imageUrl: resolveCatalogImage(product),
-  discount: toNumber(product.discount),
-  rating: toNumber(product.rating),
-  farmerName: product.farmerName,
-  location: product.location,
-  organic: Boolean(product.organic),
-});
+export const normalizeProduct = (product) => {
+  if (!product) return null;
+  const rawImage =
+    product.imageUrl
+    || product.image_path
+    || product.imagePath
+    || (Array.isArray(product.images) ? (product.images.find((img) => img?.primaryImage)?.imageUrl || product.images[0]?.imageUrl) : '')
+    || product.productImage
+    || product.thumbnailUrl
+    || product.thumbnail
+    || product.primaryImage
+    || product.image
+    || '';
+
+  const resolvedImg = getProductImage(
+    product.productName || product.name,
+    product.category,
+    rawImage
+  );
+
+  return {
+    ...product,
+    id: product.id || product.productId || product.sku,
+    name: product.productName || product.name || 'Unnamed product',
+    category: parseCategoryName(product.category),
+    teluguName: product.teluguName,
+    description: product.description,
+    marketPrice: toNumber(product.marketPrice ?? product.originalPrice ?? product.price),
+    price: toNumber(product.sellingPrice ?? product.price ?? 0),
+    originalPrice: toNumber(product.originalPrice ?? product.marketPrice ?? product.price ?? 0),
+    sellingPrice: toNumber(product.sellingPrice ?? product.price ?? 0),
+    unit: product.unit || 'kg',
+    stockQuantity: toNumber(product.stockQuantity ?? product.quantity ?? product.stock ?? 50),
+    imageUrl: resolvedImg || FALLBACK_IMAGE,
+    imagePath: resolveImageUrl(product.imagePath || product.image_path || rawImage),
+    discount: toNumber(product.discountPercentage ?? product.discount),
+    rating: toNumber(product.rating, 4.5),
+    farmerName: product.farmerName,
+    location: product.farmerLocation || product.location,
+    organic: Boolean(product.isOrganic ?? product.organic),
+    status: product.status || 'ACTIVE',
+    imageAltText: product.imageAltText || `${product.productName || product.name || 'Product'} image`,
+  };
+};
+
+const isActiveProduct = (product) => Boolean(product && (product.id || product.name));
 
 const mapApiResponseToList = (responseData) => {
   if (Array.isArray(responseData)) {
@@ -119,40 +134,29 @@ const mapApiResponseToList = (responseData) => {
     return responseData.content.map(normalizeProduct);
   }
 
+  if (responseData?.data?.content && Array.isArray(responseData.data.content)) {
+    return responseData.data.content.map(normalizeProduct);
+  }
+
   if (responseData?.data && Array.isArray(responseData.data)) {
     return responseData.data.map(normalizeProduct);
+  }
+
+  if (responseData?.items && Array.isArray(responseData.items)) {
+    return responseData.items.map(normalizeProduct);
   }
 
   return [];
 };
 
-const filterLocalProducts = ({
-  keyword = '',
-  category = 'All',
-  minPrice = '',
-  maxPrice = '',
-  organic = 'all',
-}) => {
-  const query = keyword.trim().toLowerCase();
-  const min = minPrice === '' ? null : toNumber(minPrice, 0);
-  const max = maxPrice === '' ? null : toNumber(maxPrice, Number.MAX_SAFE_INTEGER);
-
-  return seedProducts
-    .map(normalizeProduct)
-    .filter((item) => {
-      const matchesKeyword =
-        query.length === 0
-        || item.name.toLowerCase().includes(query)
-        || item.description.toLowerCase().includes(query)
-        || item.farmerName.toLowerCase().includes(query);
-
-      const matchesCategory = category === 'All' || item.category === category;
-      const matchesMin = min === null || item.price >= min;
-      const matchesMax = max === null || item.price <= max;
-      const matchesOrganic = organic === 'all' || item.organic === (organic === 'true');
-
-      return matchesKeyword && matchesCategory && matchesMin && matchesMax && matchesOrganic;
-    });
+const getApiPageMeta = (responseData) => {
+  const pageData = responseData?.data?.content ? responseData.data : responseData;
+  return {
+    totalPages: Math.max(1, toNumber(pageData?.totalPages, 1)),
+    totalElements: Math.max(0, toNumber(pageData?.totalElements, 0)),
+    size: Math.max(1, toNumber(pageData?.size, 10)),
+    number: Math.max(0, toNumber(pageData?.number, 0)),
+  };
 };
 
 const paginate = (items, page = 1, pageSize = 12) => {
@@ -175,61 +179,299 @@ const unwrapError = (error, fallbackMessage) => {
   return new Error(message);
 };
 
+const fetchCatalogPage = async (params) => {
+  const response = await api.get('/products', { params });
+  return response.data;
+};
+
+const FALLBACK_PRODUCTS = [
+  {
+    id: 'demo-1',
+    name: 'Fresh Organic Tomatoes',
+    category: 'Vegetables',
+    teluguName: 'టమోటాలు',
+    description: 'Farm-fresh, naturally ripened juicy red tomatoes harvested daily.',
+    marketPrice: 50,
+    price: 38,
+    originalPrice: 50,
+    sellingPrice: 38,
+    unit: 'kg',
+    stockQuantity: 100,
+    imageUrl: tomatoImg,
+    discount: 24,
+    rating: 4.8,
+    farmerName: 'Ramesh Reddy',
+    location: 'Medak, Telangana',
+    organic: true,
+    status: 'ACTIVE'
+  },
+  {
+    id: 'demo-2',
+    name: 'Crisp Farm Carrots',
+    category: 'Vegetables',
+    teluguName: 'క్యారెట్లు',
+    description: 'Sweet, crunchy pesticide-free carrots packed with Beta-carotene.',
+    marketPrice: 65,
+    price: 48,
+    originalPrice: 65,
+    sellingPrice: 48,
+    unit: 'kg',
+    stockQuantity: 80,
+    imageUrl: carrotImg,
+    discount: 26,
+    rating: 4.7,
+    farmerName: 'Venkat Rao',
+    location: 'Rangareddy, Telangana',
+    organic: true,
+    status: 'ACTIVE'
+  },
+  {
+    id: 'demo-3',
+    name: 'Fresh Green Capsicum',
+    category: 'Vegetables',
+    teluguName: 'బెల్ పెప్పర్',
+    description: 'Vibrant green bell peppers, rich in Vitamin C.',
+    marketPrice: 70,
+    price: 52,
+    originalPrice: 70,
+    sellingPrice: 52,
+    unit: 'kg',
+    stockQuantity: 60,
+    imageUrl: capsicumImg,
+    discount: 25,
+    rating: 4.6,
+    farmerName: 'Lakshmi Narayana',
+    location: 'Nalgonda, Telangana',
+    organic: true,
+    status: 'ACTIVE'
+  },
+  {
+    id: 'demo-4',
+    name: 'Organic Cabbage',
+    category: 'Vegetables',
+    teluguName: 'కాబేజీ',
+    description: 'Crisp leafy cabbage grown with organic compost.',
+    marketPrice: 40,
+    price: 28,
+    originalPrice: 40,
+    sellingPrice: 28,
+    unit: 'kg',
+    stockQuantity: 75,
+    imageUrl: cabbageImg,
+    discount: 30,
+    rating: 4.5,
+    farmerName: 'Suresh Babu',
+    location: 'Karimnagar, Telangana',
+    organic: true,
+    status: 'ACTIVE'
+  },
+  {
+    id: 'demo-5',
+    name: 'Fresh Cauliflower',
+    category: 'Vegetables',
+    teluguName: 'గోబీ',
+    description: 'Clean white cauliflower florets direct from rural farms.',
+    marketPrice: 55,
+    price: 42,
+    originalPrice: 55,
+    sellingPrice: 42,
+    unit: 'kg',
+    stockQuantity: 50,
+    imageUrl: cauliflowerImg,
+    discount: 23,
+    rating: 4.6,
+    farmerName: 'Krishna Murthy',
+    location: 'Warangal, Telangana',
+    organic: true,
+    status: 'ACTIVE'
+  },
+  {
+    id: 'demo-6',
+    name: 'Tender Okra (Ladies Finger)',
+    category: 'Vegetables',
+    teluguName: 'బెండకాయ',
+    description: 'Soft tender okra harvested early morning for maximum freshness.',
+    marketPrice: 60,
+    price: 45,
+    originalPrice: 60,
+    sellingPrice: 45,
+    unit: 'kg',
+    stockQuantity: 90,
+    imageUrl: ladiesFingerImg,
+    discount: 25,
+    rating: 4.8,
+    farmerName: 'Ramesh Reddy',
+    location: 'Medak, Telangana',
+    organic: true,
+    status: 'ACTIVE'
+  },
+  {
+    id: 'demo-7',
+    name: 'Alphonso Mangoes',
+    category: 'Fruit',
+    teluguName: 'మామిడి పళ్ళు',
+    description: 'Sweet, aromatic premium organic mangoes.',
+    marketPrice: 240,
+    price: 180,
+    originalPrice: 240,
+    sellingPrice: 180,
+    unit: 'kg',
+    stockQuantity: 40,
+    imageUrl: mangoImg,
+    discount: 25,
+    rating: 4.9,
+    farmerName: 'Anil Kumar',
+    location: 'Chittoor, AP',
+    organic: true,
+    status: 'ACTIVE'
+  },
+  {
+    id: 'demo-8',
+    name: 'Farm Fresh Bananas',
+    category: 'Fruit',
+    teluguName: 'అరటి పళ్ళు',
+    description: 'Naturally ripened sweet bananas.',
+    marketPrice: 60,
+    price: 44,
+    originalPrice: 60,
+    sellingPrice: 44,
+    unit: 'dozen',
+    stockQuantity: 120,
+    imageUrl: bananaImg,
+    discount: 26,
+    rating: 4.7,
+    farmerName: 'Subba Rao',
+    location: 'Guntur, AP',
+    organic: true,
+    status: 'ACTIVE'
+  },
+  {
+    id: 'demo-9',
+    name: 'Crisp Red Apples',
+    category: 'Fruit',
+    teluguName: 'యాపిల్స్',
+    description: 'Sweet, juicy red apples.',
+    marketPrice: 180,
+    price: 140,
+    originalPrice: 180,
+    sellingPrice: 140,
+    unit: 'kg',
+    stockQuantity: 65,
+    imageUrl: appleImg,
+    discount: 22,
+    rating: 4.8,
+    farmerName: 'Rajesh Sharma',
+    location: 'Shimla, HP',
+    organic: true,
+    status: 'ACTIVE'
+  },
+  {
+    id: 'demo-10',
+    name: 'Juicy Nagpur Oranges',
+    category: 'Fruit',
+    teluguName: 'కమలా పళ్ళు',
+    description: 'Rich in Vitamin-C juicy sweet oranges.',
+    marketPrice: 120,
+    price: 89,
+    originalPrice: 120,
+    sellingPrice: 89,
+    unit: 'kg',
+    stockQuantity: 85,
+    imageUrl: orangeImg,
+    discount: 25,
+    rating: 4.6,
+    farmerName: 'Prakash Patil',
+    location: 'Nagpur, MH',
+    organic: true,
+    status: 'ACTIVE'
+  },
+  {
+    id: 'demo-11',
+    name: 'Fresh Spinach (Palak)',
+    category: 'Leafy Vegetables',
+    teluguName: 'పాలకూర',
+    description: 'Iron-rich, vibrant green organic spinach leaves.',
+    marketPrice: 30,
+    price: 20,
+    originalPrice: 30,
+    sellingPrice: 20,
+    unit: 'bunch',
+    stockQuantity: 150,
+    imageUrl: defaultVegImg,
+    discount: 33,
+    rating: 4.9,
+    farmerName: 'Sita Ramaiah',
+    location: 'Khammam, Telangana',
+    organic: true,
+    status: 'ACTIVE'
+  },
+  {
+    id: 'demo-12',
+    name: 'Fresh Green Chilli',
+    category: 'Vegetables',
+    teluguName: 'పచ్చి మిర్చి',
+    description: 'Spicy farm-fresh green chillies.',
+    marketPrice: 50,
+    price: 36,
+    originalPrice: 50,
+    sellingPrice: 36,
+    unit: 'kg',
+    stockQuantity: 110,
+    imageUrl: greenChilliImg,
+    discount: 28,
+    rating: 4.5,
+    farmerName: 'Gopal Reddy',
+    location: 'Warangal, Telangana',
+    organic: true,
+    status: 'ACTIVE'
+  }
+];
+
 export const productService = {
-  async getProducts(filters = {}) {
-    const {
-      page = 1,
-      pageSize = 12,
-      keyword = '',
-      category = 'All',
-      minPrice = '',
-      maxPrice = '',
-      organic = 'all',
-    } = filters;
-
+  async getAllActiveProducts() {
     try {
-      const response = await catalogApi.get('/products/filter', {
-        params: {
-          keyword: keyword || null,
-          category: category === 'All' ? null : category,
-          minPrice: minPrice === '' ? null : toNumber(minPrice),
-          maxPrice: maxPrice === '' ? null : toNumber(maxPrice),
-          organic: organic === 'all' ? null : organic === 'true',
-          page: Math.max(0, page - 1),
-          size: pageSize,
-        },
-      });
-
-      const body = response.data;
-      const list = mapApiResponseToList(body);
-
-      if (Array.isArray(body?.content)) {
-        return {
-          items: list,
-          totalItems: toNumber(body.totalElements, list.length),
-          totalPages: Math.max(1, toNumber(body.totalPages, 1)),
-          page: toNumber(body.number, 0) + 1,
-          pageSize: toNumber(body.size, pageSize),
-        };
+      const response = await catalogApi.get('/products');
+      const products = mapApiResponseToList(response.data);
+      if (Array.isArray(products) && products.length > 0) {
+        return products;
       }
-
-      return paginate(list, page, pageSize);
+      return FALLBACK_PRODUCTS;
     } catch (error) {
-      const fallbackList = filterLocalProducts({ keyword, category, minPrice, maxPrice, organic });
-      return paginate(fallbackList, page, pageSize);
+      console.warn('Network error encountered loading products from API:', error?.message);
+      return FALLBACK_PRODUCTS;
+    }
+  },
+
+  async getProducts(params = {}) {
+    try {
+      const response = await catalogApi.get('/products', { params });
+      const rawData = response.data?.products ?? response.data?.data ?? response.data ?? [];
+      const products = Array.isArray(rawData) ? rawData.map(normalizeProduct) : [];
+
+      return {
+        success: true,
+        products: products.length > 0 ? products : FALLBACK_PRODUCTS,
+        message: null,
+      };
+    } catch (error) {
+      console.error('Failed to load products:', error?.message || error);
+      return {
+        success: false,
+        products: FALLBACK_PRODUCTS,
+        message: error.response?.data?.message || 'Products are temporarily unavailable.',
+      };
     }
   },
 
   async getProductById(id) {
     try {
-      const response = await catalogApi.get(`/products/${id}`);
-      return normalizeProduct(response.data?.data || response.data);
+      const response = await api.get(`/products/${id}`);
+      const body = response.data?.data || response.data;
+      return normalizeProduct(body);
     } catch (error) {
-      const fallback = seedProducts.find((item) => String(item.id) === String(id));
-      if (fallback) {
-        return normalizeProduct(fallback);
-      }
-      throw unwrapError(error, 'Product not found');
+      console.error(`Failed to load product ${id}:`, error);
+      const found = FALLBACK_PRODUCTS.find((p) => String(p.id) === String(id)) || FALLBACK_PRODUCTS[0];
+      return found;
     }
   },
 
@@ -269,3 +511,9 @@ export const productService = {
     }
   },
 };
+
+export async function getProducts(params = {}) {
+  return productService.getProducts(params);
+}
+
+export default productService;

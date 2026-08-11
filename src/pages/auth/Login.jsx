@@ -1,130 +1,148 @@
 import React, { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Mail, Lock, LogIn, ShieldCheck } from 'lucide-react';
+import { Mail, Lock, LogIn, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { getHomePathForRole } from '../../utils/roleUtils';
+import { authService } from '../../services/authService';
 import AuthLayout from '../../components/auth/AuthLayout';
 import Input from '../../components/common/Input';
-import Select from '../../components/common/Select';
 import Button from '../../components/common/Button';
-
-// Validation Schema using Zod
-const loginSchema = z.object({
-  email: z.string().min(1, 'Email or phone number is required'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  portalRole: z.string().optional(),
-  rememberMe: z.boolean().optional(),
-});
+import toast from 'react-hot-toast';
 
 const Login = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+
   const navigate = useNavigate();
   const location = useLocation();
-
-  const roleHint = location.state?.roleHint || 'customer';
-
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    formState: { errors },
-  } = useForm({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: '',
-      password: '',
-      portalRole: roleHint,
-      rememberMe: false,
-    }
-  });
+  const { login } = useAuth();
 
   useEffect(() => {
-    if (roleHint) {
-      setValue('portalRole', roleHint);
+    const prefillEmail = location.state?.email || sessionStorage.getItem('pendingVerificationEmail');
+    if (prefillEmail) {
+      setEmail(prefillEmail);
     }
-  }, [roleHint, setValue]);
+  }, [location]);
 
-  const onSubmit = async (data) => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!email.trim() || !password.trim()) {
+      toast.error('Please enter email and password.');
+      return;
+    }
+
     setLoading(true);
     try {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      sessionStorage.removeItem('token');
-      sessionStorage.removeItem('user');
-
-      const loggedUser = await login(data.email, data.password, data.rememberMe, data.portalRole);
-      
-      // Navigate to chosen portal or user's assigned role
-      const chosenRole = String(data.portalRole || loggedUser?.role || 'customer').toLowerCase();
-      if (chosenRole === 'admin' || chosenRole.includes('admin')) {
-        navigate('/admin');
-      } else if (chosenRole === 'farmer' || chosenRole.includes('farmer')) {
-        navigate('/dashboard');
-      } else {
-        navigate('/customer');
+      try {
+        await login(email.trim(), password.trim(), rememberMe, 'customer');
+      } catch (authContextErr) {
+        if (authContextErr.response) {
+          throw authContextErr;
+        }
+        console.warn('[Login] Fallback to authService for local sign in:', authContextErr?.message);
+        const data = await authService.loginCustomer(email.trim(), password.trim(), rememberMe);
+        if (data && (data.accessToken || data.token)) {
+          toast.success('Signed in successfully!');
+          window.location.href = location.state?.from || '/customer/shop';
+          return;
+        }
       }
+      toast.success('Signed in successfully!');
+      const redirectPath = location.state?.from || '/customer/shop';
+      navigate(redirectPath, { replace: true });
     } catch (err) {
-      console.error("Login API error:", err);
-      console.error("Response data:", err.response?.data);
-      console.error("Response status:", err.response?.status);
+      const requestUrl = err.config?.url || '/api/v1/auth/login';
+      const requestMethod = (err.config?.method || 'POST').toUpperCase();
+      const statusCode = err.response?.status;
+      const responseBody = err.response?.data;
+      const exceptionMessage = err.message;
 
-      if (err.isUnverified) {
-        navigate('/verify-otp', { state: { email: data.email, role: 'farmer', step: 'login' } });
+      console.error('[Customer Login] Complete Error Details:', {
+        requestUrl,
+        requestMethod,
+        statusCode,
+        responseBody,
+        exceptionMessage,
+      });
+
+      console.error('Request URL:', requestUrl);
+      console.error('Request Method:', requestMethod);
+      console.error('HTTP Status Code:', statusCode);
+      console.error('Response Body:', responseBody);
+      console.error('Exception Message:', exceptionMessage);
+
+      const STATUS_MESSAGES = {
+        401: 'Invalid email or password.',
+        403: 'Account is blocked or inactive.',
+        404: 'User not found.',
+        409: 'Account already exists.',
+        422: 'Validation failed.',
+        500: 'Internal server error.',
+      };
+
+      const backendMessage =
+        (responseBody && typeof responseBody === 'object' && (responseBody.message || responseBody.error || responseBody.detail)) ||
+        err?.customFormattedMessage;
+
+      const displayMsg = backendMessage || STATUS_MESSAGES[statusCode] || 'Invalid email or password.';
+
+      if (displayMsg.toLowerCase().includes('verify') || displayMsg.toLowerCase().includes('unverified')) {
+        sessionStorage.setItem('pendingVerificationEmail', email.trim());
+        toast.error('Please verify your email first.');
+        navigate('/customer/verify-otp', { state: { email: email.trim() } });
+      } else {
+        toast.error(displayMsg);
       }
     } finally {
       setLoading(false);
     }
   };
 
-  const roleOptions = [
-    { value: 'customer', label: '🛒 Customer / Consumer Portal' },
-    { value: 'farmer', label: '🌾 Farmer / Producer Portal' },
-    { value: 'admin', label: '🔑 Administrator Portal' },
-  ];
-
   return (
     <AuthLayout title="Sign In" subtitle="Access your Farm to Home dashboard">
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        {/* Role / Portal Selection Dropdown */}
-        <Select
-          label="Sign In To Portal / Role"
-          icon={ShieldCheck}
-          options={roleOptions}
-          error={errors.portalRole}
-          {...register('portalRole')}
-        />
-
-        {/* Email or Phone Number Field */}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Email Address Field */}
         <Input
-          label="Email Address or Phone Number"
-          type="text"
-          placeholder="e.g. farmer@field.com or 9876543210"
+          label="EMAIL ADDRESS"
+          type="email"
+          placeholder="e.g. customer@example.com"
           icon={Mail}
-          error={errors.email}
-          {...register('email')}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
         />
 
-        {/* Password Field */}
-        <Input
-          label="Password"
-          type="password"
-          placeholder="••••••••"
-          icon={Lock}
-          error={errors.password}
-          {...register('password')}
-        />
+        {/* Password Field with Eye Toggle */}
+        <div className="relative">
+          <Input
+            label="PASSWORD"
+            type={showPassword ? 'text' : 'password'}
+            placeholder="••••••••"
+            icon={Lock}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          <button
+            type="button"
+            className="absolute right-3.5 top-[38px] text-slate-400 hover:text-slate-600 focus:outline-none"
+            onClick={() => setShowPassword(!showPassword)}
+            title={showPassword ? 'Hide password' : 'Show password'}
+          >
+            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+          </button>
+        </div>
 
-        {/* Remember Me and Forgot Password links */}
+        {/* Remember Me & Forgot Password */}
         <div className="flex items-center justify-between text-xs sm:text-sm font-semibold select-none pt-1">
           <label className="flex items-center text-slate-500 hover:text-slate-800 cursor-pointer">
             <input
               type="checkbox"
               className="mr-2 rounded border-slate-300 text-primary focus:ring-primary w-4 h-4"
-              {...register('rememberMe')}
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
             />
             Remember Me
           </label>
@@ -136,11 +154,11 @@ const Login = () => {
           </Link>
         </div>
 
-        {/* Submit Button */}
+        {/* Sign In Button */}
         <Button
           type="submit"
           variant="gradient"
-          className="w-full py-3.5 mt-6"
+          className="w-full py-3.5 mt-6 shadow-md"
           isLoading={loading}
           icon={LogIn}
         >
@@ -148,47 +166,12 @@ const Login = () => {
         </Button>
       </form>
 
-      {/* Divider */}
-      <div className="relative flex items-center justify-center my-6">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-slate-200" />
-        </div>
-        <span className="relative px-3 bg-white text-xs font-bold text-slate-400 uppercase select-none z-10">
-          Quick Demo Accounts
-        </span>
-      </div>
-
-      {/* Quick Demo Access Buttons */}
-      <div className="grid grid-cols-3 gap-2 mb-6">
-        <button
-          type="button"
-          onClick={() => onSubmit({ email: 'admin@farmtohome.com', password: 'password123', portalRole: 'admin', rememberMe: true })}
-          className="px-2 py-2 text-xs font-bold bg-slate-900 hover:bg-slate-800 text-emerald-400 rounded-lg border border-slate-700 transition-colors shadow-2xs cursor-pointer"
-        >
-          🔑 Admin Demo
-        </button>
-        <button
-          type="button"
-          onClick={() => onSubmit({ email: 'farmer@farmtohome.com', password: 'password123', portalRole: 'farmer', rememberMe: true })}
-          className="px-2 py-2 text-xs font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg border border-emerald-200 transition-colors cursor-pointer"
-        >
-          🌾 Farmer Demo
-        </button>
-        <button
-          type="button"
-          onClick={() => onSubmit({ email: 'customer@farmtohome.com', password: 'password123', portalRole: 'customer', rememberMe: true })}
-          className="px-2 py-2 text-xs font-bold bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-lg border border-blue-200 transition-colors cursor-pointer"
-        >
-          🛒 Customer Demo
-        </button>
-      </div>
-
-      {/* Register Redirect link */}
-      <p className="text-sm font-medium text-slate-500 text-center select-none">
+      {/* Create Portal Account link matching screenshot */}
+      <p className="mt-6 text-sm font-medium text-slate-500 text-center select-none">
         Don't have an account?{' '}
         <Link
-          to="/register"
-          className="text-primary hover:text-primary-dark font-semibold transition-colors"
+          to="/customer/register"
+          className="text-emerald-600 hover:text-emerald-700 font-bold transition-colors"
         >
           Create Portal Account
         </Link>

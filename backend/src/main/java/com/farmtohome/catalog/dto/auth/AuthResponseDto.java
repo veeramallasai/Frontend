@@ -26,7 +26,7 @@ public class AuthResponseDto {
 
     public static AuthResponseDto fromPrincipal(UserAccountPrincipal principal, String token) {
         String fullName = principal.getFullName();
-        String role = principal.getRole().name().toLowerCase();
+        String role = principal.getRole().name();
 
         return AuthResponseDto.builder()
             .userId(principal.getId())
@@ -45,5 +45,49 @@ public class AuthResponseDto {
 
     public static AuthResponseDto fromPrincipal(UserAccountPrincipal principal) {
         return fromPrincipal(principal, null);
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public String getToken() {
+        return token;
+    }
+
+    public String getAccessToken() {
+        return accessToken;
     }
 }

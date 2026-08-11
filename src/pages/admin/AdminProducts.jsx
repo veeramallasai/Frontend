@@ -78,7 +78,7 @@ const initialProducts = [
 const categoriesList = ['Leafy Vegetables', 'Herbs & Spices', 'Fruits', 'Vegetables', 'Others'];
 
 const AdminProducts = () => {
-  const [products, setProducts] = useState(initialProducts);
+  const [products, setProducts] = useState([]);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
 

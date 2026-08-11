@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
-import api from '../services/api';
+import { useCustomer } from '../context/CustomerContext';
 import '../styles/address.css';
 
 const initialForm = {
@@ -23,6 +23,7 @@ const initialForm = {
 const AddAddressDetails = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { addAddress, setSelectedAddressId } = useCustomer();
   const selectedLocation = location.state?.selectedLocation;
   const returnTo = location.state?.returnTo || '/checkout';
 
@@ -69,10 +70,13 @@ const AddAddressDetails = () => {
   const handleSave = async () => {
     if (!validate()) return;
 
-    const payload = {
-      fullName: form.fullName.trim(),
-      mobile: form.mobile.trim(),
-      houseNo: form.houseNo.trim(),
+    const addressPayload = {
+      id: `addr-${Date.now()}`,
+      title: form.addressType,
+      name: form.fullName.trim(),
+      contactName: form.fullName.trim(),
+      line1: `${form.houseNo.trim()}${form.building.trim() ? `, ${form.building.trim()}` : ''}, ${form.street.trim()}`,
+      houseNumber: form.houseNo.trim(),
       building: form.building.trim(),
       street: form.street.trim(),
       landmark: form.landmark.trim(),
@@ -80,37 +84,26 @@ const AddAddressDetails = () => {
       city: form.city.trim(),
       state: form.state.trim(),
       pincode: form.pincode.trim(),
-      latitude: selectedLocation.latitude,
-      longitude: selectedLocation.longitude,
-      addressType: form.addressType,
+      phone: form.mobile.trim(),
       isDefault: Boolean(form.isDefault),
+      latitude: selectedLocation?.latitude,
+      longitude: selectedLocation?.longitude,
     };
 
     setIsSaving(true);
     try {
-      const response = await api.post('/customers/address', payload);
-
-      const serverAddress = response?.data?.data || response?.data || {};
-      const normalizedAddress = {
-        id: serverAddress.id || `addr-${Date.now()}`,
-        title: form.addressType,
-        name: form.fullName,
-        line1: `${form.houseNo}${form.building ? `, ${form.building}` : ''}, ${form.street}`,
-        city: form.city,
-        state: form.state,
-        pincode: form.pincode,
-        phone: form.mobile,
-        isDefault: form.isDefault,
-      };
-
-      toast.success('Address added successfully');
+      const savedAddress = await addAddress(addressPayload);
+      if (savedAddress?.id) {
+        setSelectedAddressId(savedAddress.id);
+      }
       navigate(returnTo, {
+        replace: true,
         state: {
-          newlyAddedAddress: normalizedAddress,
+          newlyAddedAddress: savedAddress || addressPayload,
         },
       });
     } catch (error) {
-      const message = error?.response?.data?.message || 'Failed to save address';
+      const message = error?.response?.data?.message || error?.message || 'Failed to save address';
       toast.error(message);
     } finally {
       setIsSaving(false);

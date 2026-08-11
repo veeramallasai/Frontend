@@ -30,6 +30,8 @@ const normalizeUserProfile = (profileData, fallbackRole) => {
     role = 'admin';
   } else if (rawRole.includes('farmer')) {
     role = 'farmer';
+  } else if (rawRole.includes('delivery')) {
+    role = 'delivery_partner';
   }
 
   return {
@@ -44,6 +46,8 @@ const normalizeUserProfile = (profileData, fallbackRole) => {
   };
 };
 
+const isNetworkConnectivityIssue = (error) => !error?.response;
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
@@ -51,83 +55,80 @@ export const AuthProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   const getBaseApiUrl = () => {
-    return (import.meta.env.VITE_API_BASE_URL || 'https://farmtohome-production-ca90.up.railway.app').replace(/\/+$/, '');
+    return (import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8082/api/v1')
+      .replace(/\/+$/, '')
+      .replace(/\/api(\/v1)?$/, '');
   };
 
   // Helper to fetch full profile and store local session
   const fetchFullUserProfile = async (accessToken, userEmail, userRole, rememberMe = false) => {
-    if (rememberMe) {
-      localStorage.setItem('token', accessToken);
-    } else {
-      sessionStorage.setItem('token', accessToken);
-    }
+    const storage = rememberMe ? localStorage : sessionStorage;
+    storage.setItem('token', accessToken);
+    storage.setItem('accessToken', accessToken);
+
+    let loggedUser = {
+      email: userEmail || '',
+      name: userEmail ? userEmail.split('@')[0] : 'User',
+      role: String(userRole || 'customer').toLowerCase(),
+      status: 'active',
+      farmCompleted: false
+    };
+
+    let profileFetchFailedDueToNetwork = false;
 
     try {
-      // Fetch core UserResponse
       const profileResponse = await api.get('/api/v1/auth/profile');
-      const profileData = profileResponse.data.data;
+      const profileData = profileResponse.data?.data || profileResponse.data;
+      if (profileData) {
+        loggedUser = {
+          ...loggedUser,
+          ...normalizeUserProfile(profileData, userRole),
+          role: String(userRole || profileData?.role || 'customer').toLowerCase(),
+        };
+      }
+    } catch (profileErr) {
+      profileFetchFailedDueToNetwork = isNetworkConnectivityIssue(profileErr);
+      console.warn('[AuthContext] Profile details fetch fallback:', profileErr?.message);
+    }
 
-      let loggedUser = {
-        ...normalizeUserProfile(profileData, userRole),
-        role: String(userRole || profileData?.role || 'customer').toLowerCase(),
-        status: 'active',
-        farmCompleted: false
-      };
-
-      // Role-specific detailed profiles
-      if (loggedUser.role === 'farmer') {
-        try {
-          const farmerProfileResponse = await api.get('/api/v1/farmers/profile');
-          const farmerData = farmerProfileResponse.data.data;
+    // Role-specific detailed profiles if available
+    if (!profileFetchFailedDueToNetwork && loggedUser.role === 'farmer') {
+      try {
+        const farmerProfileResponse = await api.get('/api/v1/farmers/profile');
+        const farmerData = farmerProfileResponse.data?.data || farmerProfileResponse.data;
+        if (farmerData) {
           loggedUser = {
             ...loggedUser,
             status: (farmerData.approvalStatus || 'PENDING').toLowerCase(),
             farmCompleted: true,
             farmDetails: farmerData
           };
-        } catch (farmerError) {
-          if (farmerError.response?.status === 404 || farmerError.response?.data?.message?.includes('not configured')) {
-            loggedUser.status = 'pending';
-            loggedUser.farmCompleted = false;
-          } else {
-            console.error('Failed to fetch farmer profile:', farmerError);
-          }
         }
-      } else if (loggedUser.role === 'customer') {
-        try {
-          const customerProfileResponse = await api.get('/api/v1/customers/me');
-          const customerData = customerProfileResponse.data.data;
+      } catch (farmerError) {
+        loggedUser.status = 'pending';
+        loggedUser.farmCompleted = false;
+      }
+    } else if (!profileFetchFailedDueToNetwork && loggedUser.role === 'customer') {
+      try {
+        const customerProfileResponse = await api.get('/api/v1/customers/me');
+        const customerData = customerProfileResponse.data?.data || customerProfileResponse.data;
+        if (customerData) {
           loggedUser = {
             ...loggedUser,
             customerDetails: customerData
           };
-        } catch (customerError) {
-          if (customerError.response?.status === 404 || customerError.response?.data?.message?.includes('not configured')) {
-            loggedUser.customerDetails = null;
-          } else {
-            console.error('Failed to fetch customer profile:', customerError);
-          }
         }
+      } catch (customerError) {
+        // Silent fallback
       }
-
-      setUser(loggedUser);
-      setToken(accessToken);
-      setIsAuthenticated(true);
-
-      if (rememberMe) {
-        localStorage.setItem('user', JSON.stringify(loggedUser));
-      } else {
-        sessionStorage.setItem('user', JSON.stringify(loggedUser));
-      }
-
-      return loggedUser;
-    } catch (err) {
-      localStorage.removeItem('token');
-      sessionStorage.removeItem('token');
-      localStorage.removeItem('user');
-      sessionStorage.removeItem('user');
-      throw err;
     }
+
+    setUser(loggedUser);
+    setToken(accessToken);
+    setIsAuthenticated(true);
+
+    storage.setItem('user', JSON.stringify(loggedUser));
+    return loggedUser;
   };
 
   // Synchronize authentication state on load
@@ -221,7 +222,11 @@ export const AuthProvider = ({ children }) => {
         error.isUnverified = true;
       }
 
-      toast.error(formattedMsg);
+      if (error.response) {
+        toast.error(formattedMsg);
+      } else {
+        console.warn('[AuthContext Login] Backend offline / network error:', formattedMsg);
+      }
       throw error;
     } finally {
       setIsLoading(false);

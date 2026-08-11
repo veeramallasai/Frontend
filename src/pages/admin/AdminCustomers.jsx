@@ -39,127 +39,9 @@ import {
 import toast from 'react-hot-toast';
 import adminService from '../../services/adminService';
 
-// Rich Default Sample Customers Data
-const initialCustomersDataset = [
-  {
-    id: 'CUST-501',
-    name: 'Ramesh Kumar',
-    email: 'ramesh.kumar@gmail.com',
-    phone: '+91 98765 11223',
-    location: 'Madhapur, Hyderabad, Telangana',
-    joinDate: '2026-07-28',
-    totalOrders: 14,
-    totalSpent: 8450,
-    lastOrderDate: '2026-07-30',
-    status: 'VIP',
-    address: 'Flat 402, Green Valley Apts, Madhapur, Hyderabad',
-    orders: [
-      { orderCode: 'ORD-9912', date: '2026-07-30', itemsCount: 6, total: 1250, status: 'DELIVERED' },
-      { orderCode: 'ORD-8830', date: '2026-07-15', itemsCount: 4, total: 820, status: 'DELIVERED' },
-      { orderCode: 'ORD-7711', date: '2026-06-30', itemsCount: 8, total: 1940, status: 'DELIVERED' }
-    ]
-  },
-  {
-    id: 'CUST-502',
-    name: 'Sneha Patel',
-    email: 'sneha.patel@yahoo.com',
-    phone: '+91 98123 44556',
-    location: 'Jubilee Hills, Hyderabad, Telangana',
-    joinDate: '2026-07-27',
-    totalOrders: 8,
-    totalSpent: 4200,
-    lastOrderDate: '2026-07-29',
-    status: 'Active',
-    address: 'Plot 88, Road No 10, Jubilee Hills, Hyderabad',
-    orders: [
-      { orderCode: 'ORD-9945', date: '2026-07-29', itemsCount: 3, total: 650, status: 'DELIVERED' },
-      { orderCode: 'ORD-8891', date: '2026-07-10', itemsCount: 5, total: 1100, status: 'DELIVERED' }
-    ]
-  },
-  {
-    id: 'CUST-503',
-    name: 'Amit Singh',
-    email: 'amit.singh@outlook.com',
-    phone: '+91 97654 22334',
-    location: 'Gachibowli, Hyderabad, Telangana',
-    joinDate: '2026-06-05',
-    totalOrders: 2,
-    totalSpent: 840,
-    lastOrderDate: '2026-07-20',
-    status: 'Active',
-    address: 'House 12-4, Gachibowli DLF Phase 1, Hyderabad',
-    orders: [
-      { orderCode: 'ORD-9102', date: '2026-07-20', itemsCount: 2, total: 420, status: 'DELIVERED' }
-    ]
-  },
-  {
-    id: 'CUST-504',
-    name: 'Priya Sharma',
-    email: 'priya.sharma@gmail.com',
-    phone: '+91 99887 11223',
-    location: 'Banjara Hills, Hyderabad, Telangana',
-    joinDate: '2025-12-28',
-    totalOrders: 19,
-    totalSpent: 14200,
-    lastOrderDate: '2026-07-31',
-    status: 'VIP',
-    address: 'Villa 5, Palm Meadows, Banjara Hills, Hyderabad',
-    orders: [
-      { orderCode: 'ORD-9988', date: '2026-07-31', itemsCount: 10, total: 2400, status: 'DELIVERED' },
-      { orderCode: 'ORD-9800', date: '2026-07-22', itemsCount: 7, total: 1850, status: 'DELIVERED' }
-    ]
-  },
-  {
-    id: 'CUST-505',
-    name: 'Vikram Joshi',
-    email: 'vikram.j@gmail.com',
-    phone: '+91 91234 88776',
-    location: 'Kondapur, Hyderabad, Telangana',
-    joinDate: '2026-04-10',
-    totalOrders: 0,
-    totalSpent: 0,
-    lastOrderDate: 'N/A',
-    status: 'Blocked',
-    address: 'Flat 101, Lakeview Apts, Kondapur, Hyderabad',
-    orders: []
-  },
-  {
-    id: 'CUST-506',
-    name: 'Kavita Reddy',
-    email: 'kavita.reddy@gmail.com',
-    phone: '+91 94401 22334',
-    location: 'Vijayawada, Andhra Pradesh',
-    joinDate: '2026-07-26',
-    totalOrders: 6,
-    totalSpent: 3900,
-    lastOrderDate: '2026-07-31',
-    status: 'Active',
-    address: 'Door 4-12, MG Road, Vijayawada',
-    orders: [
-      { orderCode: 'ORD-9991', date: '2026-07-31', itemsCount: 5, total: 890, status: 'PROCESSING' }
-    ]
-  },
-  {
-    id: 'CUST-507',
-    name: 'Rajesh Goud',
-    email: 'rajesh.goud@gmail.com',
-    phone: '+91 93902 55667',
-    location: 'Guntur, Andhra Pradesh',
-    joinDate: '2026-07-28',
-    totalOrders: 1,
-    totalSpent: 450,
-    lastOrderDate: '2026-07-28',
-    status: 'Active',
-    address: 'Kisan Nagar, Guntur',
-    orders: [
-      { orderCode: 'ORD-9890', date: '2026-07-28', itemsCount: 2, total: 450, status: 'DELIVERED' }
-    ]
-  }
-];
-
 export default function AdminCustomers() {
   const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'analytics'
-  const [customers, setCustomers] = useState(initialCustomersDataset);
+  const [customers, setCustomers] = useState([]);
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -190,33 +72,12 @@ export default function AdminCustomers() {
   const fetchTotalCustomers = async () => {
     try {
       setLoadingTotalCustomers(true);
-      const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || 'https://farmtohome-production-ca90.up.railway.app').replace(/\/+$/, '');
-
-      let data = null;
-      try {
-        const response = await fetch(`${apiBaseUrl}/api/v1/customers`);
-        if (response.ok) {
-          data = await response.json();
-        }
-      } catch (e) {
-        try {
-          const response = await fetch(`${apiBaseUrl}/api/v1/admin/customers`);
-          if (response.ok) {
-            data = await response.json();
-          }
-        } catch (err) {}
+      const data = await adminService.getCustomers();
+      if (Array.isArray(data)) {
+        setTotalCustomers(data.length);
+      } else if (data?.totalElements !== undefined) {
+        setTotalCustomers(data.totalElements);
       }
-
-      if (!data) {
-        data = await adminService.getCustomers();
-      }
-
-      const rawData = data?.data?.content || data?.data || data;
-      const count = Array.isArray(rawData)
-        ? rawData.length
-        : rawData?.totalCustomers ?? rawData?.totalElements ?? (Array.isArray(data) ? data.length : 0);
-
-      setTotalCustomers(count);
     } catch (error) {
       console.error("Customer count error:", error);
       setTotalCustomers(0);
@@ -225,9 +86,54 @@ export default function AdminCustomers() {
     }
   };
 
+  const formatLastLogin = (lastLoginAt) => {
+    if (!lastLoginAt) return { relative: 'Never', full: 'No login record' };
+    try {
+      const d = new Date(lastLoginAt);
+      if (isNaN(d.getTime())) return { relative: 'Never', full: 'No login record' };
+      const diffMs = new Date() - d;
+      const diffMins = Math.floor(diffMs / (1000 * 60));
+      const diffHours = Math.floor(diffMins / 60);
+      const diffDays = Math.floor(diffHours / 24);
+
+      let relative = 'Just now';
+      if (diffMins < 1) relative = 'Just now 🟢';
+      else if (diffMins < 60) relative = `${diffMins}m ago`;
+      else if (diffHours < 24) relative = `${diffHours}h ago`;
+      else if (diffDays === 1) relative = 'Yesterday';
+      else relative = `${diffDays}d ago`;
+
+      const full = d.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+      return { relative, full };
+    } catch (err) {
+      return { relative: 'Never', full: 'N/A' };
+    }
+  };
+
   useEffect(() => {
     fetchData();
     fetchTotalCustomers();
+
+    // Auto-refresh directory every 10 seconds for real-time customer login updates
+    const interval = setInterval(() => {
+      fetchData();
+    }, 10000);
+
+    const handleCustomerLogin = (e) => {
+      const detail = e.detail || {};
+      toast.success(
+        `🔔 Customer Login Alert: ${detail.name || detail.email || 'A customer'} just logged in!`,
+        { duration: 5000, icon: '🟢' }
+      );
+      fetchData();
+    };
+
+    window.addEventListener('customer_login_event', handleCustomerLogin);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('customer_login_event', handleCustomerLogin);
+    };
   }, []);
 
   const fetchData = async () => {
@@ -238,7 +144,7 @@ export default function AdminCustomers() {
         adminService.getCustomerAnalytics()
       ]);
 
-      if (Array.isArray(customersData) && customersData.length > 0) {
+      if (Array.isArray(customersData)) {
         setCustomers(customersData);
       }
       if (analyticsData) {
@@ -738,12 +644,13 @@ export default function AdminCustomers() {
                   <tr>
                     <th className="px-5 py-4">Customer ID</th>
                     <th className="px-5 py-4">Customer Name</th>
+                    <th className="px-5 py-4">Online Status</th>
+                    <th className="px-5 py-4">Last Login Time</th>
                     <th className="px-5 py-4">Mobile Number</th>
                     <th className="px-5 py-4">Location</th>
                     <th className="px-5 py-4">Reg. Date</th>
                     <th className="px-5 py-4 text-center">Total Orders</th>
                     <th className="px-5 py-4 text-right">Total Spent</th>
-                    <th className="px-5 py-4">Last Order Date</th>
                     <th className="px-5 py-4">Status</th>
                     <th className="px-5 py-4 text-right">Actions</th>
                   </tr>
@@ -751,7 +658,7 @@ export default function AdminCustomers() {
                 <tbody className="divide-y divide-slate-100">
                   {filteredCustomers.length === 0 ? (
                     <tr>
-                      <td colSpan={10} className="px-6 py-12 text-center text-slate-400">
+                      <td colSpan={11} className="px-6 py-12 text-center text-slate-400">
                         <Users className="w-10 h-10 mx-auto text-slate-300 mb-2" />
                         <p className="font-semibold text-slate-700">No customers matched your selected filters.</p>
                         <p className="text-xs text-slate-400 mt-1">Click "Reset All Filters" or select a different KPI card above.</p>
@@ -761,6 +668,9 @@ export default function AdminCustomers() {
                     filteredCustomers.map(customer => {
                       const isBlocked = (customer.status || '').toLowerCase() === 'blocked';
                       const isVip = (customer.status || '').toLowerCase() === 'vip';
+                      const isOnlineNow = Boolean(customer.isOnline || customer.onlineStatus === 'ONLINE');
+                      const lastLoginInfo = formatLastLogin(customer.lastLoginAt);
+
                       return (
                         <tr key={customer.id} className="hover:bg-slate-50/80 transition">
                           {/* 1. Customer ID */}
@@ -771,8 +681,11 @@ export default function AdminCustomers() {
                           {/* 2. Customer Name */}
                           <td className="px-5 py-4">
                             <div className="flex items-center gap-2.5">
-                              <div className="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-xs">
+                              <div className="relative w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-xs shrink-0">
                                 {(customer.name || 'C')[0]}
+                                {isOnlineNow && (
+                                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white shadow-sm" title="Online Now" />
+                                )}
                               </div>
                               <div>
                                 <h4 className="font-bold text-slate-900">{customer.name}</h4>
@@ -781,12 +694,31 @@ export default function AdminCustomers() {
                             </div>
                           </td>
 
-                          {/* 3. Mobile Number */}
+                          {/* 3. Online Status */}
+                          <td className="px-5 py-4">
+                            {isOnlineNow ? (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-bold">
+                                <span className="w-1.5 h-1.5 bg-emerald-600 rounded-full animate-pulse" />
+                                ONLINE NOW
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-medium">
+                                OFFLINE
+                              </span>
+                            )}
+                          </td>
+
+                          {/* 4. Last Login Time */}
+                          <td className="px-5 py-4 text-xs font-semibold text-slate-700" title={lastLoginInfo.full}>
+                            🕒 {lastLoginInfo.relative}
+                          </td>
+
+                          {/* 5. Mobile Number */}
                           <td className="px-5 py-4 font-mono text-xs text-slate-700">
                             {customer.phone || customer.phoneNumber}
                           </td>
 
-                          {/* 4. Location */}
+                          {/* 6. Location */}
                           <td className="px-5 py-4 text-xs text-slate-600 max-w-xs truncate">
                             <span className="flex items-center gap-1">
                               <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
@@ -794,19 +726,19 @@ export default function AdminCustomers() {
                             </span>
                           </td>
 
-                          {/* 5. Registration Date */}
+                          {/* 7. Registration Date */}
                           <td className="px-5 py-4 text-xs text-slate-500">
                             {customer.joinDate || (customer.createdAt ? String(customer.createdAt).split('T')[0] : '2026-01-15')}
                           </td>
 
-                          {/* 6. Total Orders */}
+                          {/* 8. Total Orders */}
                           <td className="px-5 py-4 text-center">
                             <span className="px-2.5 py-1 rounded-full text-xs font-extrabold bg-slate-100 text-slate-800">
                               {customer.totalOrders || customer.ordersCount || 0}
                             </span>
                           </td>
 
-                          {/* 7. Total Amount Spent */}
+                          {/* 9. Total Amount Spent */}
                           <td className="px-5 py-4 text-right font-bold text-emerald-700">
                             ₹{Number(customer.totalSpent || 0).toLocaleString()}
                           </td>

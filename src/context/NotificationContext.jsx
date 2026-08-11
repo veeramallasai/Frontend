@@ -127,8 +127,18 @@ const roleSimulations = {
   ]
 };
 
+const useSafeAuth = () => {
+  try {
+    return useAuth() || {};
+  } catch (e) {
+    return { user: null, isAuthenticated: false };
+  }
+};
+
 export const NotificationProvider = ({ children }) => {
-  const { user, isAuthenticated } = useAuth();
+  const auth = useSafeAuth();
+  const user = auth?.user;
+  const isAuthenticated = Boolean(auth?.isAuthenticated);
   const [notifications, setNotifications] = useState([]);
   const [soundEnabled, setSoundEnabled] = useState(() => {
     try {
@@ -381,7 +391,17 @@ export const NotificationProvider = ({ children }) => {
 export const useNotifications = () => {
   const context = useContext(NotificationContext);
   if (!context) {
-    throw new Error('useNotifications must be used within a NotificationProvider');
+    return {
+      notifications: [],
+      unreadCount: 0,
+      soundEnabled: false,
+      addNotification: () => {},
+      markAsRead: () => {},
+      markAllAsRead: () => {},
+      deleteNotification: () => {},
+      clearAll: () => {},
+      toggleSound: () => {},
+    };
   }
   return context;
 };

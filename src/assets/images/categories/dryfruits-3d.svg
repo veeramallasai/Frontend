@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <defs>
+    <linearGradient id="almondGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#d97706"/>
+      <stop offset="100%" stop-color="#78350f"/>
+    </linearGradient>
+    <linearGradient id="cashewGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffedd5"/>
+      <stop offset="100%" stop-color="#fdba74"/>
+    </linearGradient>
+  </defs>
+  <!-- ALMONDS -->
+  <ellipse cx="80" cy="120" rx="30" ry="18" transform="rotate(-20 80 120)" fill="url(#almondGrad)" />
+  <ellipse cx="120" cy="110" rx="32" ry="19" transform="rotate(25 120 110)" fill="url(#almondGrad)" />
+  <ellipse cx="100" cy="140" rx="28" ry="17" fill="url(#almondGrad)" />
+  
+  <!-- CASHEWS -->
+  <path d="M 60 140 C 40 120 70 90 95 110 C 80 125 75 140 60 140 Z" fill="url(#cashewGrad)" />
+  <path d="M 130 140 C 150 120 120 90 95 110 C 110 125 115 140 130 140 Z" fill="url(#cashewGrad)" />
+</svg>

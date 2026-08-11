@@ -1,0 +1,284 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 700" width="100%" height="100%">
+  <defs>
+    <!-- 3D Studio Gradients -->
+    <radialGradient id="sunLight" cx="30%" cy="20%" r="80%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="50%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </radialGradient>
+
+    <!-- Turf Grass 3D Surface -->
+    <linearGradient id="turfGreen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#91d92a"/>
+      <stop offset="45%" stop-color="#76c41b"/>
+      <stop offset="100%" stop-color="#559910"/>
+    </linearGradient>
+    <linearGradient id="turfHighlight" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#aef037"/>
+      <stop offset="100%" stop-color="#76c41b"/>
+    </linearGradient>
+
+    <!-- 3D Soil Layers -->
+    <linearGradient id="soilSideRight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4d2c17"/>
+      <stop offset="100%" stop-color="#2a1609"/>
+    </linearGradient>
+    <linearGradient id="soilSideLeft" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#673d22"/>
+      <stop offset="100%" stop-color="#3d210f"/>
+    </linearGradient>
+    <linearGradient id="whiteRim" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#cbd5e1"/>
+    </linearGradient>
+
+    <!-- Garden Bed Soil -->
+    <linearGradient id="bedSoil" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#543319"/>
+      <stop offset="100%" stop-color="#361f0e"/>
+    </linearGradient>
+
+    <!-- 3D Wooden Sign -->
+    <linearGradient id="woodFace" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#d98236"/>
+      <stop offset="100%" stop-color="#9a4e13"/>
+    </linearGradient>
+    <linearGradient id="woodEdge" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#693309"/>
+      <stop offset="100%" stop-color="#3f1c03"/>
+    </linearGradient>
+
+    <!-- House Gradients -->
+    <linearGradient id="houseFront" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </linearGradient>
+    <linearGradient id="houseSide" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#cbd5e1"/>
+      <stop offset="100%" stop-color="#94a3b8"/>
+    </linearGradient>
+    <linearGradient id="roofShingle" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#15803d"/>
+      <stop offset="70%" stop-color="#166534"/>
+      <stop offset="100%" stop-color="#052e16"/>
+    </linearGradient>
+
+    <!-- Spherical 3D Lighting for Veggies & Trees -->
+    <radialGradient id="treeSphere" cx="35%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#84cc16"/>
+      <stop offset="60%" stop-color="#4d7c0f"/>
+      <stop offset="100%" stop-color="#1a3a03"/>
+    </radialGradient>
+    <radialGradient id="tomatoSphere" cx="35%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#ff6b6b"/>
+      <stop offset="50%" stop-color="#ee2727"/>
+      <stop offset="100%" stop-color="#990000"/>
+    </radialGradient>
+    <radialGradient id="carrotSphere" cx="35%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#ffaa3b"/>
+      <stop offset="60%" stop-color="#f97316"/>
+      <stop offset="100%" stop-color="#9a3412"/>
+    </radialGradient>
+    <radialGradient id="cabbageSphere" cx="35%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#86efac"/>
+      <stop offset="60%" stop-color="#22c55e"/>
+      <stop offset="100%" stop-color="#14532d"/>
+    </radialGradient>
+    <radialGradient id="radishWhite" cx="35%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="70%" stop-color="#f1f5f9"/>
+      <stop offset="100%" stop-color="#cbd5e1"/>
+    </radialGradient>
+
+    <!-- Tractor 3D -->
+    <linearGradient id="tractorBody" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="50%" stop-color="#059669"/>
+      <stop offset="100%" stop-color="#022c22"/>
+    </linearGradient>
+
+    <!-- Soft Drop Shadows -->
+    <filter id="shadow3D" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="28" stdDeviation="22" flood-color="#154d24" flood-opacity="0.28"/>
+    </filter>
+    <filter id="softObjectShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="8" flood-color="#0c3214" flood-opacity="0.28"/>
+    </filter>
+  </defs>
+
+  <!-- Ambient Shadow under platform -->
+  <ellipse cx="500" cy="530" rx="420" ry="120" fill="rgba(18, 64, 28, 0.22)" filter="blur(20px)"/>
+
+  <!-- 3D ISOMETRIC ROUNDED PLATFORM BASE -->
+  <g filter="url(#shadow3D)">
+    <!-- Bottom Layer Layer 3 (Dark Soil) -->
+    <path d="M 60,340 C 60,340 500,560 500,560 C 500,560 940,340 940,340 L 940,380 C 940,380 500,600 500,600 C 500,600 60,380 60,380 Z" fill="url(#soilSideRight)"/>
+    
+    <!-- White Layer Rim (3D Bevel) -->
+    <path d="M 60,332 C 60,332 500,552 500,552 C 500,552 940,332 940,332 L 940,344 C 940,344 500,564 500,564 C 500,564 60,344 60,344 Z" fill="url(#whiteRim)"/>
+
+    <!-- Top Turf Grass Surface (Rounded Corner Hexagon/Diamond) -->
+    <path d="M 500,120 C 530,120 880,280 910,295 C 940,310 940,330 910,345 C 880,360 530,535 500,535 C 470,535 120,360 90,345 C 60,330 60,310 90,295 C 120,280 470,120 500,120 Z" fill="url(#turfGreen)"/>
+
+    <!-- Highlight Rim Edge -->
+    <path d="M 500,120 C 530,120 880,280 910,295 C 940,310 940,330 910,345 C 880,360 530,535 500,535" fill="none" stroke="#b5f842" stroke-width="4" opacity="0.8"/>
+
+    <!-- Path / Dirt Trail -->
+    <path d="M 500,535 Q 520,440 480,380 Q 450,330 520,270 L 560,260 Q 490,320 520,380 Q 560,450 535,530 Z" fill="#b88339" opacity="0.9"/>
+  </g>
+
+  <!-- 3D WOODEN "100% ORGANIC" SIGNBOARD (TOP LEFT) -->
+  <g transform="translate(140, 100)" filter="url(#softObjectShadow)">
+    <!-- Posts -->
+    <rect x="50" y="80" width="14" height="70" fill="url(#woodEdge)" rx="3"/>
+    <rect x="150" y="80" width="14" height="70" fill="url(#woodEdge)" rx="3"/>
+
+    <!-- Sign Board Face -->
+    <rect x="20" y="10" width="174" height="90" fill="url(#woodFace)" rx="14" stroke="#451c03" stroke-width="4"/>
+    <rect x="26" y="16" width="162" height="78" fill="none" stroke="#fcd34d" stroke-width="2" opacity="0.4" rx="10"/>
+
+    <!-- Double Leaf Logo -->
+    <g transform="translate(107, 34)">
+      <path d="M -10,-12 C -2,-12 4,-4 4,6 C -4,6 -10,0 -10,-12 Z" fill="#84cc16"/>
+      <path d="M 2,-16 C 12,-16 18,-8 18,2 C 10,2 2,-4 2,-16 Z" fill="#4ea80b"/>
+    </g>
+
+    <!-- Text -->
+    <text x="107" y="60" font-family="Plus Jakarta Sans, system-ui, sans-serif" font-weight="900" font-size="22" fill="#ffffff" text-anchor="middle" letter-spacing="1">100%</text>
+    <text x="107" y="84" font-family="Plus Jakarta Sans, system-ui, sans-serif" font-weight="800" font-size="18" fill="#fef3c7" text-anchor="middle">Organic</text>
+  </g>
+
+  <!-- 3D TREES BEHIND SIGN -->
+  <g transform="translate(320, 70)" filter="url(#softObjectShadow)">
+    <!-- Trunk -->
+    <rect x="42" y="90" width="16" height="40" fill="#4d280e" rx="4"/>
+    <!-- Spherical Foliage -->
+    <circle cx="50" cy="50" r="46" fill="url(#treeSphere)"/>
+    <circle cx="25" cy="60" r="32" fill="url(#treeSphere)"/>
+    <circle cx="75" cy="55" r="34" fill="url(#treeSphere)"/>
+  </g>
+
+  <!-- 3D FARMHOUSE (TOP RIGHT) -->
+  <g transform="translate(560, 40)" filter="url(#softObjectShadow)">
+    <!-- Main House Walls -->
+    <path d="M 40,160 L 160,210 L 260,150 L 260,70 L 160,20 L 40,70 Z" fill="url(#houseFront)"/>
+    <path d="M 160,210 L 260,150 L 260,70 L 160,20 Z" fill="url(#houseSide)"/>
+
+    <!-- Chimney with Soft Smoke -->
+    <rect x="70" y="-10" width="20" height="45" fill="#475569" rx="3"/>
+    <circle cx="80" cy="-24" r="10" fill="rgba(255,255,255,0.7)"/>
+    <circle cx="88" cy="-40" r="15" fill="rgba(255,255,255,0.4)"/>
+
+    <!-- Green Gable Roof -->
+    <path d="M 25,70 L 160,5 L 275,70 L 160,120 Z" fill="url(#roofShingle)"/>
+    <path d="M 160,5 L 275,70 L 260,78 L 160,15 Z" fill="#052e16"/>
+
+    <!-- Dormer Window on Roof -->
+    <path d="M 100,40 L 130,25 L 160,40 L 130,55 Z" fill="url(#roofShingle)"/>
+    <rect x="118" y="32" width="24" height="18" fill="#38bdf8" rx="4" stroke="#ffffff" stroke-width="2"/>
+
+    <!-- Door & Windows -->
+    <rect x="140" y="115" width="40" height="65" fill="#0f172a" rx="6"/>
+    <rect x="200" y="85" width="36" height="36" fill="#38bdf8" rx="6" stroke="#ffffff" stroke-width="3"/>
+    <rect x="70" y="90" width="36" height="36" fill="#38bdf8" rx="6" stroke="#ffffff" stroke-width="3"/>
+  </g>
+
+  <!-- 3D CROP FIELD BEDS (LEFT FOREGROUND) -->
+  <g transform="translate(100, 240)">
+    <!-- Bed 1 -->
+    <path d="M 40,60 L 220,-30 L 280,0 L 100,90 Z" fill="url(#bedSoil)"/>
+    <!-- Bed 2 -->
+    <path d="M 90,100 L 270,10 L 330,40 L 150,130 Z" fill="url(#bedSoil)"/>
+    <!-- Bed 3 -->
+    <path d="M 140,140 L 320,50 L 380,80 L 200,170 Z" fill="url(#bedSoil)"/>
+
+    <!-- Rows of 3D Crops (Spherical Lettuce, Carrots, Tomatoes) -->
+    <!-- Row 1 Cabbages -->
+    <circle cx="80" cy="40" r="10" fill="url(#cabbageSphere)"/>
+    <circle cx="120" cy="20" r="11" fill="url(#cabbageSphere)"/>
+    <circle cx="160" cy="0" r="10" fill="url(#cabbageSphere)"/>
+    <circle cx="200" cy="-20" r="11" fill="url(#cabbageSphere)"/>
+
+    <!-- Row 2 Carrots with Orange Tops -->
+    <circle cx="130" cy="80" r="10" fill="url(#carrotSphere)"/>
+    <circle cx="170" cy="60" r="11" fill="url(#carrotSphere)"/>
+    <circle cx="210" cy="40" r="10" fill="url(#carrotSphere)"/>
+    <circle cx="250" cy="20" r="11" fill="url(#carrotSphere)"/>
+
+    <!-- Row 3 Tomatoes on Stakes -->
+    <circle cx="180" cy="120" r="12" fill="url(#tomatoSphere)"/>
+    <circle cx="220" cy="100" r="13" fill="url(#tomatoSphere)"/>
+    <circle cx="260" cy="80" r="12" fill="url(#tomatoSphere)"/>
+    <circle cx="300" cy="60" r="13" fill="url(#tomatoSphere)"/>
+  </g>
+
+  <!-- WHITE PICKET FENCE ALONG CROP BEDS -->
+  <g transform="translate(120, 260)" filter="url(#softObjectShadow)">
+    <path d="M 20,80 L 260,200" stroke="#ffffff" stroke-width="7" stroke-linecap="round"/>
+    <path d="M 20,98 L 260,218" stroke="#ffffff" stroke-width="7" stroke-linecap="round"/>
+    <rect x="40" y="60" width="10" height="52" fill="#ffffff" rx="3"/>
+    <rect x="80" y="80" width="10" height="52" fill="#ffffff" rx="3"/>
+    <rect x="120" y="100" width="10" height="52" fill="#ffffff" rx="3"/>
+    <rect x="160" y="120" width="10" height="52" fill="#ffffff" rx="3"/>
+    <rect x="200" y="140" width="10" height="52" fill="#ffffff" rx="3"/>
+    <rect x="240" y="160" width="10" height="52" fill="#ffffff" rx="3"/>
+  </g>
+
+  <!-- 3D VEGETABLE BASKET (CENTER FOREGROUND) -->
+  <g transform="translate(450, 360)" filter="url(#softObjectShadow)">
+    <!-- Woven Wooden Basket Box -->
+    <path d="M 10,40 L 150,40 L 130,110 L 30,110 Z" fill="#b45309" stroke="#542304" stroke-width="4"/>
+    <path d="M 10,40 L 30,110 L 50,110 L 30,40 Z" fill="#d97706" opacity="0.6"/>
+    <path d="M 70,40 L 75,110 L 95,110 L 90,40 Z" fill="#d97706" opacity="0.6"/>
+
+    <!-- Fresh Produce Overflowing in Basket -->
+    <!-- Daikon Radish (White) -->
+    <ellipse cx="40" cy="25" rx="16" ry="24" fill="url(#radishWhite)" transform="rotate(-20 40 25)"/>
+    <circle cx="35" cy="5" r="10" fill="#4d7c0f"/> <!-- Leaves -->
+
+    <!-- Tomatoes (Red Spheres) -->
+    <circle cx="75" cy="30" r="18" fill="url(#tomatoSphere)"/>
+    <circle cx="110" cy="38" r="16" fill="url(#tomatoSphere)"/>
+
+    <!-- Carrots (Orange Spheres) -->
+    <ellipse cx="95" cy="20" rx="14" ry="22" fill="url(#carrotSphere)" transform="rotate(25 95 20)"/>
+
+    <!-- Leafy Bok Choy Greens -->
+    <circle cx="60" cy="12" r="18" fill="url(#cabbageSphere)"/>
+  </g>
+
+  <!-- 3D GREEN TRACTOR (RIGHT SIDE) -->
+  <g transform="translate(720, 270)" filter="url(#softObjectShadow)">
+    <!-- Rear Big Wheel -->
+    <circle cx="45" cy="55" r="45" fill="#0f172a" stroke="#475569" stroke-width="8"/>
+    <circle cx="45" cy="55" r="20" fill="#f8fafc"/>
+
+    <!-- Front Small Wheel -->
+    <circle cx="145" cy="72" r="26" fill="#0f172a" stroke="#475569" stroke-width="6"/>
+    <circle cx="145" cy="72" r="10" fill="#f8fafc"/>
+
+    <!-- Tractor Engine & Body -->
+    <rect x="35" y="0" width="65" height="55" fill="url(#tractorBody)" rx="10"/>
+    <rect x="90" y="22" width="65" height="40" fill="#10b981" rx="8"/>
+    <!-- Glass Cabin -->
+    <rect x="44" y="8" width="44" height="30" fill="#bae6fd" rx="5" stroke="#ffffff" stroke-width="2"/>
+    <!-- Exhaust Pipe -->
+    <rect x="135" y="-15" width="7" height="38" fill="#1e293b" rx="2"/>
+  </g>
+
+  <!-- 3D AUDIT CERTIFIED BADGE (FOREGROUND RIGHT) -->
+  <g transform="translate(520, 485)" filter="url(#softObjectShadow)">
+    <!-- Rounded Pill Container -->
+    <rect x="0" y="0" width="220" height="60" fill="#14532d" rx="18" stroke="#84cc16" stroke-width="3.5"/>
+    
+    <!-- Shield Check Icon Circle -->
+    <g transform="translate(14, 11)">
+      <circle cx="19" cy="19" r="19" fill="#ffffff"/>
+      <path d="M 12,19 L 17,24 L 27,14" stroke="#16a34a" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    </g>
+    
+    <!-- Badge Typography -->
+    <text x="68" y="32" font-family="Plus Jakarta Sans, system-ui, sans-serif" font-weight="900" font-size="16" fill="#ffffff">Audit Certified</text>
+    <text x="68" y="49" font-family="Plus Jakarta Sans, system-ui, sans-serif" font-weight="800" font-size="11" fill="#a3e635" letter-spacing="1">ORGANIC STANDARDS 2024</text>
+  </g>
+</svg>

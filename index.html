@@ -3,17 +3,105 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+    <meta name="theme-color" content="#059669" />
     
-    <!-- SEO Optimization -->
-    <title>Farm2Home - Fresh Farm Produce Delivered Straight to Your Doorstep</title>
-    <meta name="description" content="Farm2Home bridges the gap between local farmers and households. Experience premium quality organic fruits, vegetables, and dairy products delivered fresh from the fields." />
-    <meta name="keywords" content="farm to home, local organic food, fresh produce delivery, farm fresh veggies, local farmer support" />
-    
-    <!-- Google Fonts: Poppins -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Primary SEO Meta Tags -->
+    <title>Farm to Home - Fresh Farm Produce & Organic Food Delivery</title>
+    <meta name="title" content="Farm to Home - Fresh Farm Produce & Organic Food Delivery" />
+    <meta name="description" content="Order 100% fresh organic vegetables, fruits, leafy greens, dairy, poultry & farm essentials delivered straight from local farmers to your home within 24 hours." />
+    <meta name="keywords" content="farm to home, fresh vegetables online, organic fruits delivery, farm fresh milk, local farmer marketplace, organic food online, farm to door" />
+    <meta name="author" content="Farm to Home Inc." />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <link rel="canonical" href="https://farmtohome.com/" />
+
+    <!-- Open Graph / Facebook / WhatsApp Meta Tags -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://farmtohome.com/" />
+    <meta property="og:site_name" content="Farm to Home" />
+    <meta property="og:title" content="Farm to Home - Fresh Farm Produce & Organic Food Delivery" />
+    <meta property="og:description" content="Direct from local farmers to your doorstep. Order fresh organic vegetables, fruits, dairy, and groceries with express morning delivery." />
+    <meta property="og:image" content="https://farmtohome.com/og-image.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://farmtohome.com/" />
+    <meta name="twitter:title" content="Farm to Home - Fresh Farm Produce & Organic Food Delivery" />
+    <meta name="twitter:description" content="Direct from local farmers to your doorstep. Order fresh organic vegetables, fruits, dairy, and groceries." />
+    <meta name="twitter:image" content="https://farmtohome.com/og-image.jpg" />
+
+    <!-- Web App Manifest & Favicon -->
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+
+    <!-- Preconnect Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+    <!-- JSON-LD Structured Data (Schema.org) for Google Search Engine -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "GroceryStore",
+        "name": "Farm to Home",
+        "url": "https://farmtohome.com",
+        "logo": "https://farmtohome.com/favicon.svg",
+        "image": "https://farmtohome.com/og-image.jpg",
+        "description": "Direct farm-to-door fresh organic produce marketplace connecting local farmers with households.",
+        "telephone": "+1-800-555-FARM",
+        "priceRange": "₹",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "100 Innovation Parkway, Suite 400",
+          "addressLocality": "Hyderabad",
+          "addressRegion": "Telangana",
+          "postalCode": "500081",
+          "addressCountry": "IN"
+        },
+        "geo": {
+          "@type": "GeoCoordinates",
+          "latitude": "17.4486",
+          "longitude": "78.3742"
+        },
+        "openingHoursSpecification": {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": [
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday",
+            "Saturday",
+            "Sunday"
+          ],
+          "opens": "06:00",
+          "closes": "22:00"
+        },
+        "sameAs": [
+          "https://facebook.com/farmtohome",
+          "https://instagram.com/farmtohome",
+          "https://twitter.com/farmtohome"
+        ]
+      }
+    </script>
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "Farm to Home",
+        "url": "https://farmtohome.com",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://farmtohome.com/marketplace?search={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
+      }
+    </script>
   </head>
   <body class="bg-[#F8FAFC] text-[#1E293B] antialiased">
     <div id="root"></div>

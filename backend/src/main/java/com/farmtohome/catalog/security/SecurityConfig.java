@@ -2,7 +2,6 @@ package com.farmtohome.catalog.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.authentication.ProviderManager;
@@ -47,9 +46,31 @@ public class SecurityConfig {
                 .accessDeniedHandler(accessDeniedHandler)
             )
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.POST, "/api/v1/auth/login", "/api/v1/auth/register", "/api/v1/auth/verify-email").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/v1/auth/profile").authenticated()
-                .anyRequest().permitAll()
+                .requestMatchers("/api/v1/auth/profile").authenticated()
+                .requestMatchers(
+                    "/api/delivery-partners/me/face-status",
+                    "/api/delivery-partners/me/face/register",
+                    "/api/delivery-partners/me/face/verify",
+                    "/api/v1/delivery-partners/me/**",
+                    "/api/v1/delivery-partner/face/**"
+                ).hasRole("DELIVERY_PARTNER")
+                .requestMatchers(
+                    "/api/v1/auth/**",
+                    "/api/v1/delivery-partner/auth/**",
+                    "/api/v1/delivery-partner/login"
+                ).permitAll()
+                .requestMatchers("/api/v1/delivery-partner/dashboard/**").hasRole("DELIVERY_PARTNER")
+                .requestMatchers("/api/v1/products/**").permitAll()
+                .requestMatchers(
+                    "/api/v1/admin/products/**",
+                    "/api/v1/admin/delivery-partners/**",
+                    "/api/v1/admin/users/**",
+                    "/api/v1/admin/customers/**",
+                    "/api/v1/admin/orders/assign",
+                    "/api/v1/admin/**"
+                ).hasAnyRole("ADMIN", "SUPER_ADMIN", "CUSTOMER")
+                .requestMatchers("/api/v1/customers/**").authenticated()
+                .anyRequest().authenticated()
             )
             .authenticationProvider(authenticationProvider())
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

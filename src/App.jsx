@@ -4,15 +4,19 @@ import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
 import { CustomerProvider } from './context/CustomerContext';
 import { NotificationProvider } from './context/NotificationContext';
+import { AdminAuthProvider } from './admin/context/AdminAuthContext';
+import AppErrorBoundary from './components/common/AppErrorBoundary';
 import AppRoutes from './routes/AppRoutes';
 import './App.css';
 
 function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <NotificationProvider>
-          <CustomerProvider>
+      <AppErrorBoundary>
+        <AuthProvider>
+          <AdminAuthProvider>
+            <NotificationProvider>
+              <CustomerProvider>
             {/* Toast Notifications Provider */}
             <Toaster
               position="top-right"
@@ -48,7 +52,9 @@ function App() {
             <AppRoutes />
           </CustomerProvider>
         </NotificationProvider>
+      </AdminAuthProvider>
       </AuthProvider>
+      </AppErrorBoundary>
     </BrowserRouter>
   );
 }

@@ -15,9 +15,21 @@ public interface ProductService {
 
     ApiResponse<ProductDTO> updateProduct(Long id, ProductDTO productDTO);
 
+    ApiResponse<ProductDTO> updateProductPrice(Long id, Double marketPrice, Double profitMargin);
+
+    ApiResponse<ProductDTO> updateProductStock(Long id, Double stockQuantity);
+
+    ApiResponse<ProductDTO> updateProductStatus(Long id, String status);
+
+    ApiResponse<ProductDTO> restoreProduct(Long id);
+
     ApiResponse<Void> deleteProduct(Long id);
 
     ApiResponse<String> uploadProductImage(MultipartFile file);
+
+    ApiResponse<String> importProducts(MultipartFile file);
+
+    byte[] exportProducts(String format);
 
     ApiResponse<Page<ProductDTO>> searchByProductName(String productName, int page, int size);
 

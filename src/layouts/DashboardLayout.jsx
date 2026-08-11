@@ -20,10 +20,12 @@ import {
   ShoppingBag,
   Layers,
   Tags,
+  Ticket,
   Image as ImageIcon,
   MessageSquare,
   BarChart2,
   AlertCircle,
+  Shield,
   UserCheck,
   Package
 } from 'lucide-react';
@@ -56,6 +58,7 @@ const DashboardLayout = () => {
     { name: 'Deliveries', path: '/dashboard/delivery', icon: Truck },
     { name: 'Earnings & Payments', path: '/dashboard/payments', icon: CreditCard },
     { name: 'Farm Inventory', path: '/dashboard/inventory', icon: ShoppingBag },
+    { name: 'Offers & Coupons', path: '/dashboard/coupons', icon: Ticket },
     { name: 'Customer Reviews', path: '/dashboard/reviews', icon: MessageSquare },
     { name: 'Notifications', path: '/dashboard/notifications', icon: Bell },
     { name: 'Support & Help', path: '/dashboard/support', icon: HelpCircle },

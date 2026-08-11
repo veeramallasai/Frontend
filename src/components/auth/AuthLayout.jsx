@@ -1,11 +1,20 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Leaf } from 'lucide-react';
+import { Leaf, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const AuthLayout = ({ children, title = 'Welcome Back', subtitle = 'Harvesting trust, delivering fresh.' }) => {
   return (
     <div className="min-h-screen w-full relative flex items-center justify-center py-12 px-4 overflow-hidden">
+      {/* Top-Left Back to Home Button */}
+      <Link
+        to="/"
+        className="absolute top-4 left-4 sm:top-6 sm:left-6 z-30 inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-white/90 hover:bg-white text-slate-800 hover:text-emerald-700 font-extrabold text-xs sm:text-sm shadow-md border border-white/60 backdrop-blur-md transition-all cursor-pointer hover:-translate-x-1"
+        title="Return to Farm2Home Homepage"
+      >
+        <ArrowLeft className="w-4 h-4 text-emerald-600" />
+        <span>Back to Home</span>
+      </Link>
       {/* Beautiful CSS Gradient Background (Replaces Video to fix ORB warnings) */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#134E5E] to-[#71B280] z-0" />
       

@@ -132,18 +132,18 @@ const OrderSuccess = () => {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
           <button
             type="button"
-            onClick={() => navigate('/customer')}
+            onClick={() => navigate('/customer/shop')}
             className="w-full sm:w-auto px-8 py-3 rounded-full border-2 border-slate-300 hover:border-slate-400 bg-white text-slate-800 text-xs sm:text-sm font-black shadow-xs transition-all hover:bg-slate-50"
           >
-            Back to Home
+            Continue Shopping
           </button>
 
           <button
             type="button"
-            onClick={() => navigate('/customer/profile', { state: { tab: 'orders' } })}
-            className="w-full sm:w-auto px-8 py-3 rounded-full bg-[#0070a6] hover:bg-[#005f8d] text-white text-xs sm:text-sm font-black shadow-md transition-all"
+            onClick={() => navigate('/customer/orders')}
+            className="w-full sm:w-auto px-8 py-3 rounded-full bg-[#009b5a] hover:bg-[#00874e] text-white text-xs sm:text-sm font-black shadow-md transition-all cursor-pointer"
           >
-            View Orders
+            View My Orders
           </button>
         </div>
 

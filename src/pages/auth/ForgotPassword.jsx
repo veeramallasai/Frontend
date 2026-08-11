@@ -48,7 +48,7 @@ const ForgotPassword = () => {
         <Input
           label="Email Address or Phone Number"
           type="text"
-          placeholder="e.g. farmer@field.com or 9876543210"
+          placeholder="e.g. customer@example.com or 9876543210"
           icon={Mail}
           error={errors.email}
           {...register('email')}

@@ -3,5 +3,6 @@ package com.farmtohome.catalog.enums;
 public enum UserRole {
     ADMIN,
     FARMER,
-    CUSTOMER
+    CUSTOMER,
+    DELIVERY_PARTNER
 }
