@@ -10,11 +10,18 @@ import catBeveragesAi from './categories/beverages-3d.svg';
 import catDryfruitsAi from './categories/dryfruits-3d.svg';
 import catSnacksAi from './categories/snacks-3d.svg';
 
+const fruitBasket = aiFruitBasket;
+const vegBasket = aiVegBasket;
+const deliveryScooter = aiDeliveryScooter;
+
 export {
   aiFruitBasket,
   aiVegBasket,
   aiDeliveryScooter,
   aiFarmHero,
+  fruitBasket,
+  vegBasket,
+  deliveryScooter,
   catDairyAi,
   catGroceriesAi,
   catGrainsAi,
@@ -22,5 +29,6 @@ export {
   catDryfruitsAi,
   catSnacksAi,
 };
+
 
 
