@@ -1,6 +1,7 @@
 import aiFruitBasket from './fruits-basket-3d.svg';
 import aiVegBasket from './veg-basket-3d.svg';
 import aiDeliveryScooter from './delivery-scooter-3d.svg';
+import aiFarmHero from './farm-hero-3d.png';
 
 import catDairyAi from './categories/dairy-3d.svg';
 import catGroceriesAi from './categories/grocery-3d.svg';
@@ -13,6 +14,7 @@ export {
   aiFruitBasket,
   aiVegBasket,
   aiDeliveryScooter,
+  aiFarmHero,
   catDairyAi,
   catGroceriesAi,
   catGrainsAi,
@@ -20,4 +22,5 @@ export {
   catDryfruitsAi,
   catSnacksAi,
 };
+
 
