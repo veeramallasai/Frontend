@@ -1,3 +1,0 @@
-@echo off
-echo Batch file for copying images if needed...
-echo Done!

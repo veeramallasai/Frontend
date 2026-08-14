@@ -1,40 +1,62 @@
 # Flutter & Dart build caches & dependencies
+.git
+.git/*
+.git/
+.dart_tool
+.dart_tool/*
 .dart_tool/
-**/.dart_tool/
-.pub-cache/
-.pub/
+.pub-cache
+.pub
+build
+build/*
 build/
-**/build/
-*.dill
-*.track.dill
-.gradle/
-**/.gradle/
-target/
-**/target/
-backend/target/
+.gradle
+.gradle/*
+target
+target/*
+backend/target
+backend/target/*
 
 # Node & JS artifacts
+node_modules
+node_modules/*
 node_modules/
-**/node_modules/
 
 # Native app platform folders not needed for Flutter Web
+android
+android/*
 android/
-**/android/
+ios
+ios/*
 ios/
-**/ios/
+linux
+linux/*
 linux/
-**/linux/
+macos
+macos/*
 macos/
-**/macos/
+windows
+windows/*
 windows/
-**/windows/
 
 # Non-essential workspace directories
+backend
+backend/*
 backend/
+flutter_app
+flutter_app/*
 flutter_app/
+public
+public/*
 public/
+src
+src/*
 src/
+workflows
+workflows/*
 workflows/
+lib_old
+lib_old/*
 lib_old/
 
 # Helper scripts & local build scripts
@@ -52,11 +74,12 @@ run_frontend.bat
 *.tar.gz
 
 # IDE & OS metadata
-.git/
-**/.git/
-.github/
-.idea/
-.vscode/
+.github
+.github/*
+.idea
+.idea/*
+.vscode
+.vscode/*
 .DS_Store
 *.iml
 *.log
