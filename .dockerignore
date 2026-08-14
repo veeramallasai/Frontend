@@ -7,6 +7,11 @@ build/
 **/build/
 *.dill
 *.track.dill
+.gradle/
+**/.gradle/
+target/
+**/target/
+backend/target/
 
 # Node & JS artifacts
 node_modules/
@@ -14,10 +19,15 @@ node_modules/
 
 # Native app platform folders not needed for Flutter Web
 android/
+**/android/
 ios/
+**/ios/
 linux/
+**/linux/
 macos/
+**/macos/
 windows/
+**/windows/
 
 # Non-essential workspace directories
 backend/
@@ -34,6 +44,12 @@ copy-images.bat
 copy_images.js
 build_frontend.bat
 run_frontend.bat
+
+# Heavy archives
+*.jar
+*.war
+*.zip
+*.tar.gz
 
 # IDE & OS metadata
 .git/

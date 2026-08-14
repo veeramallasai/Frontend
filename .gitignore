@@ -12,14 +12,16 @@
 .swiftpm/
 migrate_working_dir/
 
-# IntelliJ related
+# IntelliJ / IDE related
 *.iml
 *.ipr
 *.iws
 .idea/
+.vscode/
 
 # Flutter / Dart build outputs and caches
 .dart_tool/
+**/.dart_tool/
 .pub-cache/
 .pub/
 build/
@@ -28,8 +30,36 @@ build/
 *.track.dill
 .flutter-plugins-dependencies
 
-# Node / Backend local folders
+# Java / Maven build outputs
+target/
+**/target/
+backend/target/
+
+# Gradle build outputs
+.gradle/
+**/.gradle/
+
+# Large binaries & archives
+*.jar
+*.war
+*.zip
+*.tar.gz
+
+# Non-web platform directories
+android/
+**/android/
+ios/
+**/ios/
+linux/
+**/linux/
+macos/
+**/macos/
+windows/
+**/windows/
+
+# Non-essential workspace directories
 node_modules/
+**/node_modules/
 backend/
 flutter_app/
 public/
@@ -37,12 +67,11 @@ src/
 workflows/
 lib_old/
 temp_seed.js
+copy_images.js
+build_frontend.bat
+run_frontend.bat
+*.bat
 
 # Symbolication & obfuscation
 app.*.symbols
 app.*.map.json
-
-# Android build outputs
-/android/app/debug
-/android/app/profile
-/android/app/release
