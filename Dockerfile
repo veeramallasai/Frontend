@@ -1,4 +1,4 @@
-FROM ghcr.io/cirrusci/flutter:stable AS builder
+FROM ghcr.io/cirruslabs/flutter:stable AS builder
 
 WORKDIR /app
 
@@ -10,7 +10,7 @@ COPY lib ./lib
 COPY web ./web
 COPY assets ./assets
 
-RUN flutter build web --release
+RUN flutter build web --release --no-wasm-dry-run
 
 FROM nginx:alpine
 
