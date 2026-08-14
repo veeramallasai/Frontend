@@ -1,85 +1,104 @@
-# Flutter & Dart build caches & dependencies
+# Ignore Git history & metadata
 .git
-.git/*
 .git/
+.git/**
+**/.git/**
+.github
+.github/
+.github/**
+**/.github/**
+
+# Ignore Flutter/Dart build artifacts & caches
 .dart_tool
-.dart_tool/*
 .dart_tool/
+.dart_tool/**
+**/.dart_tool/**
 .pub-cache
+.pub-cache/
+.pub-cache/**
 .pub
+.pub/
+.pub/**
 build
-build/*
 build/
-.gradle
-.gradle/*
-target
-target/*
-backend/target
-backend/target/*
+build/**
+**/build/**
+*.dill
+*.track.dill
 
-# Node & JS artifacts
-node_modules
-node_modules/*
-node_modules/
+# Ignore IDE configuration
+.idea
+.idea/
+.idea/**
+**/.idea/**
+.vscode
+.vscode/
+.vscode/**
+**/.vscode/**
+*.iml
 
-# Native app platform folders not needed for Flutter Web
+# Ignore native app platforms
 android
-android/*
 android/
+android/**
+**/android/**
 ios
-ios/*
 ios/
+ios/**
+**/ios/**
 linux
-linux/*
 linux/
+linux/**
+**/linux/**
 macos
-macos/*
 macos/
+macos/**
+**/macos/**
 windows
-windows/*
 windows/
+windows/**
+**/windows/**
 
-# Non-essential workspace directories
+# Ignore non-web workspace components & secondary apps
 backend
-backend/*
 backend/
+backend/**
+**/backend/**
 flutter_app
-flutter_app/*
 flutter_app/
-public
-public/*
-public/
-src
-src/*
-src/
-workflows
-workflows/*
-workflows/
+flutter_app/**
+**/flutter_app/**
 lib_old
-lib_old/*
 lib_old/
+lib_old/**
+**/lib_old/**
+public
+public/
+public/**
+**/public/**
+src
+src/
+src/**
+**/src/**
+workflows
+workflows/
+workflows/**
+**/workflows/**
+node_modules
+node_modules/
+node_modules/**
+**/node_modules/**
 
-# Helper scripts & local build scripts
-*.bat
-temp_seed.js
-copy-images.bat
-copy_images.js
-build_frontend.bat
-run_frontend.bat
-
-# Heavy archives
+# Ignore heavy binaries, logs & scripts
 *.jar
 *.war
 *.zip
 *.tar.gz
-
-# IDE & OS metadata
-.github
-.github/*
-.idea
-.idea/*
-.vscode
-.vscode/*
-.DS_Store
-*.iml
+*.apk
+*.aab
 *.log
+*.bat
+temp_seed.js
+copy_images.js
+build_frontend.bat
+run_frontend.bat

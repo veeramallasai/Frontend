@@ -1,77 +1,99 @@
-# Miscellaneous
-*.class
-*.log
-*.pyc
-*.swp
-.DS_Store
-.atom/
-.build/
-.buildlog/
-.history
-.svn/
-.swiftpm/
-migrate_working_dir/
-
-# IntelliJ / IDE related
-*.iml
-*.ipr
-*.iws
-.idea/
-.vscode/
-
-# Flutter / Dart build outputs and caches
+# Flutter & Dart build outputs and caches
+.dart_tool
 .dart_tool/
-**/.dart_tool/
-.pub-cache/
-.pub/
+.dart_tool/**
+**/.dart_tool/**
+.pub-cache
+.pub
+build
 build/
-**/build/
+build/**
+**/build/**
 *.dill
 *.track.dill
 .flutter-plugins-dependencies
 
-# Java / Maven build outputs
+# IDE configuration
+.idea
+.idea/
+.idea/**
+.vscode
+.vscode/
+.vscode/**
+*.iml
+
+# Native app platforms
+android
+android/
+android/**
+**/android/**
+ios
+ios/
+ios/**
+**/ios/**
+linux
+linux/
+linux/**
+**/linux/**
+macos
+macos/
+macos/**
+**/macos/**
+windows
+windows/
+windows/**
+**/windows/**
+
+# Java / Maven / Gradle build outputs
+target
 target/
-**/target/
-backend/target/
-
-# Gradle build outputs
+target/**
+**/target/**
+.gradle
 .gradle/
-**/.gradle/
+.gradle/**
+**/.gradle/**
 
-# Large binaries & archives
+# Heavy binaries, logs & archives
 *.jar
 *.war
 *.zip
 *.tar.gz
+*.apk
+*.aab
+*.log
+*.bat
 
-# Non-web platform directories
-android/
-**/android/
-ios/
-**/ios/
-linux/
-**/linux/
-macos/
-**/macos/
-windows/
-**/windows/
-
-# Non-essential workspace directories
+# Non-web workspace directories
+node_modules
 node_modules/
-**/node_modules/
+node_modules/**
+**/node_modules/**
+backend
 backend/
+backend/**
+**/backend/**
+flutter_app
 flutter_app/
+flutter_app/**
+**/flutter_app/**
+public
 public/
+public/**
+**/public/**
+src
 src/
+src/**
+**/src/**
+workflows
 workflows/
+workflows/**
+**/workflows/**
+lib_old
 lib_old/
+lib_old/**
+**/lib_old/**
 temp_seed.js
 copy_images.js
 build_frontend.bat
 run_frontend.bat
-*.bat
-
-# Symbolication & obfuscation
-app.*.symbols
-app.*.map.json
