@@ -19,10 +19,12 @@ FROM nginx:alpine
 # Copy built web artifacts from build stage
 COPY --from=build /app/build/web /usr/share/nginx/html
 
-# Copy Nginx configuration template and dynamic port entrypoint script
+# Copy Nginx configuration template and dynamic port scripts
 COPY nginx.conf.template /etc/nginx/templates/default.conf.template
 COPY docker-entrypoint.sh /docker-entrypoint.sh
-RUN chmod +x /docker-entrypoint.sh
+COPY start.sh /start.sh
+
+RUN chmod +x /docker-entrypoint.sh /start.sh
 
 # Default fallback port
 ENV PORT=80
@@ -30,4 +32,4 @@ ENV PORT=80
 EXPOSE 80
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["/start.sh"]

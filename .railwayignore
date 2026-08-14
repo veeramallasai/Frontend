@@ -1,11 +1,14 @@
 # Railway CLI upload ignore list
 .dart_tool/
+**/.dart_tool/
 .pub-cache/
 .pub/
 build/
+**/build/
 *.dill
 *.track.dill
 node_modules/
+**/node_modules/
 backend/
 flutter_app/
 public/
@@ -18,6 +21,7 @@ macos/
 windows/
 lib_old/
 .git/
+**/.git/
 .github/
 .idea/
 .vscode/

@@ -1,8 +1,10 @@
 #!/bin/sh
 set -e
 
-# Substitute $PORT variable into Nginx default configuration while preserving Nginx variables (like $uri)
-envsubst '${PORT}' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf
+# Substitute dynamic Railway $PORT variable into Nginx default configuration while preserving Nginx variables
+if [ -f /etc/nginx/templates/default.conf.template ]; then
+  envsubst '${PORT}' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf
+fi
 
-# Execute Nginx in foreground
+# Execute entrypoint command
 exec "$@"

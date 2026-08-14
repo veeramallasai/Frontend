@@ -1,4 +1,4 @@
-# Flutter & Dart build caches
+# Flutter & Dart build caches & dependencies
 .dart_tool/
 **/.dart_tool/
 .pub-cache/
@@ -8,16 +8,27 @@ build/
 *.dill
 *.track.dill
 
-# Node & JS artifacts from repository root
+# Node & JS artifacts
 node_modules/
 **/node_modules/
+
+# Native app platform folders not needed for Flutter Web
+android/
+ios/
+linux/
+macos/
+windows/
+
+# Non-essential workspace directories
 backend/
 flutter_app/
 public/
 src/
 workflows/
+lib_old/
+
+# Helper scripts & local build scripts
 *.bat
-*.js
 temp_seed.js
 copy-images.bat
 copy_images.js
@@ -33,11 +44,3 @@ run_frontend.bat
 .DS_Store
 *.iml
 *.log
-
-# Native app platforms not needed for Flutter Web
-android/
-ios/
-linux/
-macos/
-windows/
-lib_old/
