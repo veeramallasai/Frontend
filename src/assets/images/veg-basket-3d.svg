@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 400" fill="none">
+  <defs>
+    <filter id="vegShadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="10" stdDeviation="8" flood-color="#000" flood-opacity="0.12" />
+    </filter>
+
+    <linearGradient id="basketGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#b45309"/>
+      <stop offset="100%" stop-color="#78350f"/>
+    </linearGradient>
+
+    <linearGradient id="tomatoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#dc2626"/>
+      <stop offset="100%" stop-color="#991b1b"/>
+    </linearGradient>
+
+    <linearGradient id="cabbageGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4ade80"/>
+      <stop offset="100%" stop-color="#15803d"/>
+    </linearGradient>
+
+    <linearGradient id="carrotGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ea580c"/>
+      <stop offset="100%" stop-color="#9a3412"/>
+    </linearGradient>
+
+    <linearGradient id="bellGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#16a34a"/>
+      <stop offset="100%" stop-color="#14532d"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Ground Shadow -->
+  <ellipse cx="250" cy="360" rx="190" ry="18" fill="#000000" opacity="0.12" />
+
+  <g filter="url(#vegShadow)">
+    <!-- LEAFY GREENS IN BACK -->
+    <g transform="translate(140, 100)">
+      <!-- Celery / Leek Stalks -->
+      <path d="M 120 150 L 140 20 L 160 20 L 150 150 Z" fill="#bbf7d0" stroke="#16a34a" stroke-width="2" />
+      <path d="M 135 150 L 165 0 L 185 5 L 165 150 Z" fill="#86efac" stroke="#15803d" stroke-width="2" />
+      <!-- Big Lettuce Leaves -->
+      <path d="M 60 140 C 20 60 40 10 90 30 C 130 50 100 120 90 140 Z" fill="url(#cabbageGrad)" />
+      <path d="M 40 140 C 0 80 10 30 60 50 C 90 70 70 130 60 140 Z" fill="#22c55e" />
+    </g>
+
+    <!-- BASKET BACK RIMS -->
+    <path d="M 120 250 Q 250 210 380 250 L 350 340 Q 250 365 150 340 Z" fill="url(#basketGrad2)" opacity="0.9" />
+
+    <!-- BROCCOLI / CABBAGE HEAD LEFT -->
+    <circle cx="170" cy="235" r="42" fill="url(#cabbageGrad)" />
+    <path d="M 150 210 Q 170 190 190 210 M 140 235 Q 170 220 200 235" stroke="#bbf7d0" stroke-width="3" fill="none" opacity="0.6" />
+
+    <!-- CAULIFLOWER / WHITE RADISH MID RIGHT -->
+    <circle cx="330" cy="230" r="38" fill="#f8fafc" />
+    <path d="M 300 240 C 290 200 340 190 360 220 C 370 240 330 260 300 240 Z" fill="#22c55e" opacity="0.8" />
+
+    <!-- CARROTS PROTRUDING -->
+    <g transform="translate(260, 180) rotate(25)">
+      <path d="M 0 0 L 20 110 L -10 110 Z" fill="url(#carrotGrad)" />
+      <path d="M 5 -10 L 0 5 M 10 -15 L 5 5 M 15 -10 L 10 5" stroke="#16a34a" stroke-width="3" stroke-linecap="round" />
+    </g>
+
+    <!-- FRONT ROW VEGETABLES -->
+    <!-- Red Tomatoes -->
+    <circle cx="150" cy="300" r="32" fill="url(#tomatoGrad)" />
+    <!-- Tomato Star Calyx -->
+    <path d="M 150 268 L 146 274 L 140 270 L 145 276 L 140 282 L 148 280 L 150 286 L 152 280 L 160 282 L 155 276 L 160 270 L 154 274 Z" fill="#15803d" />
+
+    <circle cx="210" cy="310" r="34" fill="url(#tomatoGrad)" />
+    <circle cx="340" cy="300" r="30" fill="url(#tomatoGrad)" />
+
+    <!-- Green Bell Pepper (Capsicum) Center -->
+    <rect x="240" y="270" width="55" height="55" rx="22" fill="url(#bellGrad)" />
+    <path d="M 267 262 L 267 274" stroke="#86efac" stroke-width="5" stroke-linecap="round" />
+
+    <!-- Purple Brinjal / Eggplant Right Front -->
+    <ellipse cx="380" cy="305" rx="26" ry="22" fill="#581c87" />
+
+    <!-- BASKET FRONT WEAVE PATTERN -->
+    <path d="M 120 250 C 180 275 320 275 380 250 L 355 338 C 300 365 200 365 145 338 Z" fill="url(#basketGrad2)" />
+    <!-- Basket Weave Lines -->
+    <path d="M 130 270 Q 250 295 370 270 M 138 290 Q 250 315 362 290 M 144 310 Q 250 335 354 310" stroke="#f59e0b" stroke-width="3" opacity="0.4" />
+    <path d="M 170 260 L 160 340 M 210 265 L 205 352 M 250 268 L 250 355 M 290 265 L 295 352 M 330 260 L 340 340" stroke="#78350f" stroke-width="3" opacity="0.3" />
+  </g>
+</svg>

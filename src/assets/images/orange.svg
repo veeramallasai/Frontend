@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">Orange</title>
+  <desc id="desc">High quality stylized orange fruit illustration</desc>
+  <defs>
+    <radialGradient id="bg" cx="30%" cy="20%" r="120%">
+      <stop offset="0%" stop-color="#fff7ed"/>
+      <stop offset="100%" stop-color="#ffedd5"/>
+    </radialGradient>
+    <radialGradient id="orangeBody" cx="35%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#fdba74"/>
+      <stop offset="60%" stop-color="#f97316"/>
+      <stop offset="100%" stop-color="#c2410c"/>
+    </radialGradient>
+    <linearGradient id="leafGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#65a30d"/>
+      <stop offset="100%" stop-color="#166534"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="120" fill="url(#bg)"/>
+  <ellipse cx="512" cy="866" rx="240" ry="36" fill="#000" opacity="0.08"/>
+  <path d="M516 250c14-40 48-70 90-84 10-3 20 5 20 16-2 42-32 82-72 98z" fill="#7c2d12"/>
+  <path d="M470 274c44-30 106-34 156 2-32 38-90 58-142 34-18-8-20-20-14-36z" fill="url(#leafGrad)"/>
+  <circle cx="512" cy="550" r="282" fill="url(#orangeBody)"/>
+  <circle cx="512" cy="550" r="246" fill="none" stroke="#fb923c" stroke-width="20" opacity="0.75"/>
+  <ellipse cx="416" cy="454" rx="88" ry="58" fill="#fff" opacity="0.2" transform="rotate(-28 416 454)"/>
+  <ellipse cx="620" cy="684" rx="90" ry="64" fill="#9a3412" opacity="0.28"/>
+</svg>
