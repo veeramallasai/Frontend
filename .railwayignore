@@ -1,0 +1,26 @@
+# Railway CLI upload ignore list
+.dart_tool/
+.pub-cache/
+.pub/
+build/
+*.dill
+*.track.dill
+node_modules/
+backend/
+flutter_app/
+public/
+src/
+workflows/
+android/
+ios/
+linux/
+macos/
+windows/
+lib_old/
+.git/
+.github/
+.idea/
+.vscode/
+*.bat
+temp_seed.js
+copy_images.js
