@@ -1,19 +1,11 @@
 server {
     listen ${PORT};
-    server_name localhost;
+    server_name _;
+
+    root /usr/share/nginx/html;
+    index index.html;
 
     location / {
-        root /usr/share/nginx/html;
-        index index.html index.htm;
         try_files $uri $uri/ /index.html;
-    }
-
-    # Enable gzip compression for optimized web loading
-    gzip on;
-    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
-
-    error_page 500 502 503 504 /50x.html;
-    location = /50x.html {
-        root /usr/share/nginx/html;
     }
 }
