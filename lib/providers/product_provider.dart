@@ -153,6 +153,25 @@ class ProductProvider extends ChangeNotifier {
         .toList(growable: false);
   }
 
+  Future<String> saveProduct(ProductModel product) async {
+    _isLoading = true;
+    _errorMessage = null;
+    _notify();
+
+    try {
+      final String savedId = await _repository.saveProduct(product);
+      await refresh();
+      return savedId;
+    } catch (error) {
+      _errorMessage = _friendlyError(error);
+      _notify();
+      rethrow;
+    } finally {
+      _isLoading = false;
+      _notify();
+    }
+  }
+
   void clearFilters() {
     _searchQuery = '';
     listenToProducts(limit: _limit);

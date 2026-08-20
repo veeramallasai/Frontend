@@ -126,10 +126,12 @@ class PremiumProductImage extends StatelessWidget {
   const PremiumProductImage({
     super.key,
     required this.path,
+    this.fallbackPath = '',
     this.fit = BoxFit.cover,
   });
 
   final String path;
+  final String fallbackPath;
   final BoxFit fit;
 
   @override
@@ -141,7 +143,18 @@ class PremiumProductImage extends StatelessWidget {
     return ClipRRect(borderRadius: BorderRadius.circular(17), child: image);
   }
 
-  Widget _error(BuildContext context, Object error, StackTrace? stackTrace) => const _ImageFallback();
+  Widget _error(BuildContext context, Object error, StackTrace? stackTrace) {
+    if (fallbackPath.isNotEmpty && fallbackPath != path) {
+      return Image.asset(
+        fallbackPath,
+        width: double.infinity,
+        height: double.infinity,
+        fit: fit,
+        errorBuilder: (_, __, ___) => const _ImageFallback(),
+      );
+    }
+    return const _ImageFallback();
+  }
 }
 
 class _ImageFallback extends StatelessWidget {

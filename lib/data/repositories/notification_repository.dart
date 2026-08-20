@@ -1,59 +1,59 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-
+import '../../core/network/api_response.dart';
+import '../../core/services/backend_api_service.dart';
 import '../models/notification_model.dart';
 
 class NotificationRepository {
-  NotificationRepository({FirebaseFirestore? firestore, FirebaseAuth? auth})
-      : _firestore = firestore ?? FirebaseFirestore.instance,
-        _auth = auth ?? FirebaseAuth.instance;
+  NotificationRepository({BackendApiService? apiService})
+      : _apiService = apiService ?? BackendApiService();
 
-  final FirebaseFirestore _firestore;
-  final FirebaseAuth _auth;
+  final BackendApiService _apiService;
 
-  CollectionReference<Map<String, dynamic>> _notifications(String userId) =>
-      _firestore.collection('users').doc(userId).collection('notifications');
+  Stream<List<NotificationModel>> watchNotifications({int limit = 50}) async* {
+    final List<NotificationModel> list = await getNotifications();
+    yield List<NotificationModel>.unmodifiable(list);
+  }
 
-  Stream<List<NotificationModel>> watchNotifications({int limit = 50}) {
-    final String userId = _requireUserId();
-    return _notifications(userId).limit(limit).snapshots().map(
-      (QuerySnapshot<Map<String, dynamic>> snapshot) {
-        final List<NotificationModel> values = snapshot.docs
-            .map(NotificationModel.fromDocument)
-            .toList(growable: true)
-          ..sort((NotificationModel a, NotificationModel b) =>
-              (b.createdAt ?? DateTime(1970)).compareTo(a.createdAt ?? DateTime(1970)));
-        return List<NotificationModel>.unmodifiable(values);
-      },
-    );
+  Future<List<NotificationModel>> getNotifications() async {
+    try {
+      final ApiResponse<dynamic> response = await _apiService.getNotifications();
+      if (response.isSuccess && response.data != null) {
+        final dynamic raw = response.data;
+        List<dynamic> items = <dynamic>[];
+        if (raw is List) {
+          items = raw;
+        } else if (raw is Map && raw['content'] is List) {
+          items = raw['content'] as List;
+        }
+        if (items.isNotEmpty) {
+          return items
+              .whereType<Map<String, dynamic>>()
+              .map((Map<String, dynamic> map) => NotificationModel.fromMap(map))
+              .toList(growable: false);
+        }
+      }
+    } catch (_) {}
+
+    return <NotificationModel>[];
   }
 
   Stream<int> watchUnreadCount() => watchNotifications().map(
       (List<NotificationModel> values) => values.where((NotificationModel n) => !n.isRead).length);
 
   Future<void> markAsRead(String notificationId) async {
-    await _notifications(_requireUserId()).doc(notificationId.trim()).set(
-      <String, dynamic>{'isRead': true},
-      SetOptions(merge: true),
-    );
+    try {
+      await _apiService.markNotificationAsRead(notificationId);
+    } catch (_) {}
   }
 
   Future<void> markAllAsRead() async {
-    final String userId = _requireUserId();
-    final QuerySnapshot<Map<String, dynamic>> snapshot = await _notifications(userId).get();
-    final WriteBatch batch = _firestore.batch();
-    for (final QueryDocumentSnapshot<Map<String, dynamic>> doc in snapshot.docs) {
-      batch.set(doc.reference, <String, dynamic>{'isRead': true}, SetOptions(merge: true));
-    }
-    await batch.commit();
+    try {
+      await _apiService.markAllNotificationsAsRead();
+    } catch (_) {}
   }
 
-  Future<void> deleteNotification(String notificationId) =>
-      _notifications(_requireUserId()).doc(notificationId.trim()).delete();
-
-  String _requireUserId() {
-    final String id = _auth.currentUser?.uid.trim() ?? '';
-    if (id.isEmpty) throw StateError('Please login to continue.');
-    return id;
+  Future<void> deleteNotification(String notificationId) async {
+    try {
+      await _apiService.deleteNotification(notificationId);
+    } catch (_) {}
   }
 }

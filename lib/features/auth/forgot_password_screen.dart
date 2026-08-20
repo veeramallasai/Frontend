@@ -1,10 +1,10 @@
 import 'dart:ui';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../app/app_routes.dart';
+import '../../core/network/api_response.dart';
+import '../../core/services/backend_api_service.dart';
 import '../../core/theme/app_colors.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
@@ -18,9 +18,11 @@ class ForgotPasswordScreen extends StatefulWidget {
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
     with SingleTickerProviderStateMixin {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final BackendApiService _apiService = BackendApiService();
 
-  final TextEditingController _identifierController =
-  TextEditingController();
+  final TextEditingController _identifierController = TextEditingController();
+  final TextEditingController _otpController = TextEditingController();
+  final TextEditingController _newPasswordController = TextEditingController();
 
   final FocusNode _identifierFocusNode = FocusNode();
 
@@ -30,6 +32,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
 
   bool _loading = false;
   bool _emailSent = false;
+  bool _obscureNewPassword = true;
 
   String _resolvedEmail = '';
 
@@ -64,7 +67,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
   void dispose() {
     _animationController.dispose();
     _identifierController.dispose();
+    _otpController.dispose();
+    _newPasswordController.dispose();
     _identifierFocusNode.dispose();
+    _apiService.dispose();
     super.dispose();
   }
 
@@ -89,102 +95,21 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
         value?.trim() ?? '';
 
     if (input.isEmpty) {
-      return 'Enter your email or mobile number';
+      return 'Enter your email address';
     }
 
-    if (input.contains('@')) {
-      final bool validEmail =
-      RegExp(
-        r'^[^\s@]+@[^\s@]+\.[^\s@]+$',
-      ).hasMatch(input);
-
-      if (!validEmail) {
-        return 'Enter a valid email address';
-      }
-
-      return null;
-    }
-
-    final String phone =
-    _normalizePhone(input);
-
-    if (!RegExp(
-      r'^[6-9]\d{9}$',
-    ).hasMatch(phone)) {
-      return 'Enter a valid 10-digit mobile number';
+    final bool validEmail = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(input);
+    if (!validEmail) {
+      return 'Enter a valid email address';
     }
 
     return null;
   }
 
-  Future<String> _resolveEmail(
-      String identifier,
-      ) async {
-    final String input =
-    identifier.trim();
-
-    if (input.contains('@')) {
-      return input.toLowerCase();
-    }
-
-    final String phone =
-    _normalizePhone(input);
-
-    QuerySnapshot<Map<String, dynamic>>
-    result =
-    await FirebaseFirestore.instance
-        .collection('users')
-        .where(
-      'phoneNumber',
-      isEqualTo: '+91$phone',
-    )
-        .limit(1)
-        .get();
-
-    if (result.docs.isEmpty) {
-      result =
-      await FirebaseFirestore.instance
-          .collection('users')
-          .where(
-        'phoneNumber',
-        isEqualTo: phone,
-      )
-          .limit(1)
-          .get();
-    }
-
-    if (result.docs.isEmpty) {
-      throw FirebaseAuthException(
-        code: 'user-not-found',
-        message:
-        'No account was found for this mobile number.',
-      );
-    }
-
-    final String email =
-    (result.docs.first
-        .data()['email'] ??
-        '')
-        .toString()
-        .trim();
-
-    if (email.isEmpty) {
-      throw FirebaseAuthException(
-        code: 'missing-email',
-        message:
-        'This mobile number is not linked to an email account.',
-      );
-    }
-
-    return email.toLowerCase();
-  }
-
   Future<void> _sendResetLink() async {
     FocusScope.of(context).unfocus();
 
-    if (!(_formKey.currentState
-        ?.validate() ??
-        false)) {
+    if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
 
@@ -193,44 +118,29 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
     });
 
     try {
-      final String email =
-      await _resolveEmail(
-        _identifierController.text,
-      );
+      final String email = _identifierController.text.trim();
 
-      await FirebaseAuth.instance
-          .sendPasswordResetEmail(
-        email: email,
-      );
+      final ApiResponse<dynamic> response = await _apiService.forgotPassword(email);
 
-      if (!mounted) {
-        return;
+      if (!mounted) return;
+
+      if (response.isSuccess) {
+        setState(() {
+          _resolvedEmail = email;
+          _emailSent = true;
+        });
+      } else {
+        _showMessage(
+          response.message.isNotEmpty
+              ? response.message
+              : 'Unable to send password reset email. Please try again.',
+          isError: true,
+        );
       }
-
-      setState(() {
-        _resolvedEmail = email;
-        _emailSent = true;
-      });
-    } on FirebaseAuthException catch (error) {
-      if (!mounted) return;
-
-      _showMessage(
-        _firebaseMessage(error),
-        isError: true,
-      );
-    } on FirebaseException catch (error) {
-      if (!mounted) return;
-
-      _showMessage(
-        error.message ??
-            'Unable to process your request right now.',
-        isError: true,
-      );
     } catch (_) {
       if (!mounted) return;
-
       _showMessage(
-        'Unable to send reset link. Please try again.',
+        'Unable to send reset email. Please check your network connection.',
         isError: true,
       );
     } finally {
@@ -242,33 +152,62 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
     }
   }
 
-  String _firebaseMessage(
-      FirebaseAuthException error,
-      ) {
-    switch (error.code) {
-      case 'user-not-found':
-        return error.message ??
-            'No account was found with these details.';
+  Future<void> _resetPassword() async {
+    FocusScope.of(context).unfocus();
 
-      case 'invalid-email':
-        return 'Enter a valid email address.';
+    final String otp = _otpController.text.trim();
+    final String newPass = _newPasswordController.text.trim();
 
-      case 'missing-email':
-        return error.message ??
-            'This account has no email linked to it.';
+    if (otp.length != 6) {
+      _showMessage('Enter the 6-digit verification OTP code.', isError: true);
+      return;
+    }
 
-      case 'too-many-requests':
-        return 'Too many attempts. Please try again later.';
+    if (newPass.length < 8) {
+      _showMessage('New password must be at least 8 characters long.', isError: true);
+      return;
+    }
 
-      case 'network-request-failed':
-        return 'Check your internet connection and try again.';
+    setState(() {
+      _loading = true;
+    });
 
-      default:
-        return error.message ??
-            'Unable to send password reset link.';
+    try {
+      final ApiResponse<dynamic> response = await _apiService.resetPassword(
+        email: _resolvedEmail,
+        otpCode: otp,
+        newPassword: newPass,
+      );
+
+      if (!mounted) return;
+
+      if (response.isSuccess) {
+        _showMessage('Password reset successfully! Please login.', isError: false);
+        Future<void>.delayed(const Duration(seconds: 1), () {
+          if (mounted) _goToLogin();
+        });
+      } else {
+        _showMessage(
+          response.message.isNotEmpty
+              ? response.message
+              : 'Failed to reset password. Check OTP code and try again.',
+          isError: true,
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      _showMessage(
+        'Unable to reset password. Please check your connection and try again.',
+        isError: true,
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
+      }
     }
   }
-
   String _maskEmail(
       String email,
       ) {
@@ -800,132 +739,135 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
 
   Widget _buildSuccessCard() {
     return Container(
-      padding:
-      const EdgeInsets.all(26),
+      padding: const EdgeInsets.all(26),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius:
-        BorderRadius.circular(30),
-        boxShadow:
-        const <BoxShadow>[
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: const <BoxShadow>[
           BoxShadow(
-            color:
-            Color(0x16000000),
+            color: Color(0x16000000),
             blurRadius: 40,
-            offset:
-            Offset(0, 18),
+            offset: Offset(0, 18),
           ),
         ],
       ),
       child: Column(
-        crossAxisAlignment:
-        CrossAxisAlignment.stretch,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           Center(
             child: Container(
-              width: 94,
-              height: 94,
-              decoration:
-              BoxDecoration(
-                color:
-                const Color(
-                  0xFFEAF8EF,
-                ),
-                borderRadius:
-                BorderRadius.circular(
-                  30,
-                ),
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: const Color(0xFFEAF8EF),
+                borderRadius: BorderRadius.circular(26),
               ),
               child: const Icon(
-                Icons
-                    .mark_email_read_outlined,
-                color:
-                AppColors.primary,
-                size: 48,
+                Icons.mark_email_read_outlined,
+                color: AppColors.primary,
+                size: 42,
               ),
             ),
           ),
 
-          const SizedBox(
-            height: 24,
-          ),
+          const SizedBox(height: 20),
 
           const Text(
-            'Check your email',
-            textAlign:
-            TextAlign.center,
+            'Enter Reset Code',
+            textAlign: TextAlign.center,
             style: TextStyle(
-              color:
-              AppColors.textPrimary,
-              fontSize: 28,
-              fontWeight:
-              FontWeight.w900,
+              color: AppColors.textPrimary,
+              fontSize: 24,
+              fontWeight: FontWeight.w900,
             ),
           ),
 
-          const SizedBox(
-            height: 10,
-          ),
+          const SizedBox(height: 8),
 
           Text(
-            'We sent a password reset link to\n${_maskEmail(_resolvedEmail)}',
-            textAlign:
-            TextAlign.center,
-            style:
-            const TextStyle(
-              color:
-              AppColors.textSecondary,
-              fontSize: 13.5,
-              height: 1.5,
-              fontWeight:
-              FontWeight.w600,
+            'OTP sent for ${_maskEmail(_resolvedEmail)}.\nCheck your email inbox or backend console logs.',
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 13,
+              height: 1.4,
+              fontWeight: FontWeight.w600,
             ),
           ),
 
-          const SizedBox(
-            height: 26,
+          const SizedBox(height: 22),
+
+          // 6-digit OTP Field
+          TextFormField(
+            controller: _otpController,
+            keyboardType: TextInputType.number,
+            maxLength: 6,
+            decoration: InputDecoration(
+              counterText: '',
+              labelText: '6-Digit OTP Code',
+              hintText: 'e.g. 123456',
+              prefixIcon: const Icon(Icons.pin_outlined, color: AppColors.primary),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            ),
           ),
+
+          const SizedBox(height: 16),
+
+          // New Password Field
+          TextFormField(
+            controller: _newPasswordController,
+            obscureText: _obscureNewPassword,
+            decoration: InputDecoration(
+              labelText: 'New Password',
+              hintText: 'Minimum 8 characters',
+              prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppColors.primary),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obscureNewPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                  color: AppColors.textSecondary,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _obscureNewPassword = !_obscureNewPassword;
+                  });
+                },
+              ),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            ),
+          ),
+
+          const SizedBox(height: 22),
 
           SizedBox(
-            height: 56,
+            height: 54,
             child: FilledButton(
-              onPressed: _goToLogin,
-              child: const Text(
-                'BACK TO LOGIN',
-              ),
+              onPressed: _loading ? null : _resetPassword,
+              child: _loading
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                    )
+                  : const Text('RESET PASSWORD', style: TextStyle(fontWeight: FontWeight.bold)),
             ),
           ),
 
-          const SizedBox(
-            height: 10,
-          ),
+          const SizedBox(height: 12),
 
-          TextButton(
-            onPressed:
-            _loading
-                ? null
-                : _sendResetLink,
-            child: const Text(
-              'Resend reset link',
-              style: TextStyle(
-                fontWeight:
-                FontWeight.w900,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: <Widget>[
+              TextButton(
+                onPressed: _loading ? null : _sendResetLink,
+                child: const Text('Resend OTP', style: TextStyle(fontWeight: FontWeight.w800)),
               ),
-            ),
-          ),
-
-          TextButton(
-            onPressed:
-            _loading
-                ? null
-                : _useAnotherAccount,
-            child: const Text(
-              'Use another account',
-              style: TextStyle(
-                fontWeight:
-                FontWeight.w800,
+              TextButton(
+                onPressed: _loading ? null : _useAnotherAccount,
+                child: const Text('Use another email', style: TextStyle(fontWeight: FontWeight.w800)),
               ),
-            ),
+            ],
           ),
         ],
       ),

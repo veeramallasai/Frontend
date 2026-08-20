@@ -1,63 +1,57 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-
+import 'dart:async';
 import '../models/auth_session_model.dart';
 
 class SessionRepository {
-  SessionRepository({FirebaseAuth? auth, FirebaseFirestore? firestore})
-      : _auth = auth ?? FirebaseAuth.instance,
-        _firestore = firestore ?? FirebaseFirestore.instance;
+  SessionRepository();
 
-  final FirebaseAuth _auth;
-  final FirebaseFirestore _firestore;
+  static AuthSessionModel _current = const AuthSessionModel(
+    userId: '',
+    isAuthenticated: false,
+  );
 
-  Stream<AuthSessionModel> watchSession() {
-    return _auth.authStateChanges().map(_sessionFromUser);
+  static final StreamController<AuthSessionModel> _controller =
+      StreamController<AuthSessionModel>.broadcast();
+
+  Stream<AuthSessionModel> watchSession() async* {
+    yield _current;
+    yield* _controller.stream;
   }
 
-  AuthSessionModel get currentSession => _sessionFromUser(_auth.currentUser);
+  AuthSessionModel get currentSession => _current;
+  static String get currentToken => _current.token;
+
+  static void setSession({
+    required String userId,
+    required String email,
+    String phoneNumber = '',
+    String token = '',
+    String name = '',
+  }) {
+    _current = AuthSessionModel(
+      userId: userId,
+      email: email,
+      phoneNumber: phoneNumber,
+      token: token,
+      provider: 'rest_api',
+      isAuthenticated: userId.isNotEmpty,
+      createdAt: DateTime.now(),
+      lastSeenAt: DateTime.now(),
+    );
+    _controller.add(_current);
+  }
 
   Future<void> touchSession() async {
-    final User? user = _auth.currentUser;
-    if (user == null) return;
-    await _firestore.collection('user_sessions').doc(user.uid).set(
-      <String, dynamic>{
-        ..._sessionFromUser(user).toMap(),
-        'lastSeenAt': FieldValue.serverTimestamp(),
-      },
-      SetOptions(merge: true),
+    if (!_current.isAuthenticated) return;
+    setSession(
+      userId: _current.userId,
+      email: _current.email,
+      phoneNumber: _current.phoneNumber,
+      token: _current.token,
     );
   }
 
   Future<void> endSession() async {
-    final String? id = _auth.currentUser?.uid;
-    if (id != null) {
-      await _firestore.collection('user_sessions').doc(id).set(
-        <String, dynamic>{
-          'isAuthenticated': false,
-          'lastSeenAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
-    }
-    await _auth.signOut();
-  }
-
-  AuthSessionModel _sessionFromUser(User? user) {
-    if (user == null) {
-      return const AuthSessionModel(userId: '', isAuthenticated: false);
-    }
-    final String provider = user.providerData.isEmpty
-        ? 'password'
-        : user.providerData.first.providerId;
-    return AuthSessionModel(
-      userId: user.uid,
-      email: user.email ?? '',
-      phoneNumber: user.phoneNumber ?? '',
-      provider: provider,
-      isAuthenticated: true,
-      createdAt: user.metadata.creationTime,
-      lastSeenAt: user.metadata.lastSignInTime,
-    );
+    _current = const AuthSessionModel(userId: '', isAuthenticated: false);
+    _controller.add(_current);
   }
 }

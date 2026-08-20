@@ -6,7 +6,7 @@ class PayNowBar extends StatelessWidget {
   const PayNowBar({
     super.key,
     required this.amount,
-    required this.isCashOnDelivery,
+    this.isCashOnDelivery = true,
     required this.onPressed,
     this.isProcessing = false,
     this.enabled = true,
@@ -54,80 +54,38 @@ class PayNowBar extends StatelessWidget {
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    Row(
-                      children: <Widget>[
-                        const Icon(
-                          Icons.lock_rounded,
-                          color: AppColors.primary,
-                          size: 11,
-                        ),
-                        const SizedBox(width: 4),
-                        Flexible(
-                          child: Text(
-                            isCashOnDelivery
-                                ? 'Pay when delivered'
-                                : 'Secure payment',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: AppColors.primary,
-                              fontSize: 8,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
                   ],
                 ),
               ),
-              const SizedBox(width: 14),
-              SizedBox(
-                height: 54,
-                child: FilledButton(
-                  onPressed: canPress ? onPressed : null,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    disabledBackgroundColor: AppColors.border,
-                    padding: const EdgeInsets.symmetric(horizontal: 22),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+              const SizedBox(width: 16),
+              Expanded(
+                child: SizedBox(
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: canPress ? onPressed : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                     ),
-                  ),
-                  child: isProcessing
-                      ? const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2.4,
-                        ),
-                      ),
-                      SizedBox(width: 9),
-                      Text(
-                        'PROCESSING...',
-                        style: TextStyle(fontWeight: FontWeight.w900),
-                      ),
-                    ],
-                  )
-                      : Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      Text(
-                        isCashOnDelivery ? 'PLACE ORDER' : 'PAY NOW',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      const SizedBox(width: 7),
-                      const Icon(Icons.arrow_forward_rounded, size: 19),
-                    ],
+                    child: isProcessing
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2.5,
+                            ),
+                          )
+                        : Text(
+                            isCashOnDelivery ? 'PLACE ORDER' : 'PAY NOW',
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
                   ),
                 ),
               ),

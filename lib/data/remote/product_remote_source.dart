@@ -1,37 +1,24 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
-import '../../core/constants/asset_paths.dart';
+import '../../core/network/api_response.dart';
+import '../../core/services/backend_api_service.dart';
 import '../models/product_model.dart';
 
 class ProductRemoteSource {
-  ProductRemoteSource({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+  ProductRemoteSource({BackendApiService? apiService})
+      : _apiService = apiService ?? BackendApiService();
 
-  final FirebaseFirestore _firestore;
-
-  CollectionReference<Map<String, dynamic>> get _products =>
-      _firestore.collection('products');
+  final BackendApiService _apiService;
 
   Stream<List<ProductModel>> watchProducts({
     String category = '',
     String shoppingMode = '',
     int limit = 100,
-  }) {
-    return _products.snapshots().map(
-          (QuerySnapshot<Map<String, dynamic>> snapshot) {
-        final List<ProductModel> products = snapshot.docs
-            .map(_productFromDocument)
-            .where(
-              (ProductModel product) => _matchesFilters(
-            product,
-            category: category,
-            shoppingMode: shoppingMode,
-          ),
-        )
-            .toList(growable: true);
-        return _sortAndLimit(products, limit);
-      },
+  }) async* {
+    final List<ProductModel> remoteList = await getProducts(
+      category: category,
+      shoppingMode: shoppingMode,
+      limit: limit,
     );
+    yield remoteList;
   }
 
   Future<List<ProductModel>> getProducts({
@@ -39,123 +26,137 @@ class ProductRemoteSource {
     String shoppingMode = '',
     int limit = 100,
   }) async {
-    final QuerySnapshot<Map<String, dynamic>> snapshot = await _products.get();
-    final List<ProductModel> products = snapshot.docs
-        .map(_productFromDocument)
-        .where(
-          (ProductModel product) => _matchesFilters(
-        product,
+    try {
+      final ApiResponse<dynamic> response = await _apiService.getProducts(
         category: category,
         shoppingMode: shoppingMode,
-      ),
-    )
-        .toList(growable: true);
-    return _sortAndLimit(products, limit);
+        limit: limit,
+      );
+
+      if (response.isSuccess && response.data != null) {
+        final dynamic raw = response.data;
+        List<dynamic> items = <dynamic>[];
+        if (raw is List) {
+          items = raw;
+        } else if (raw is Map && raw['content'] is List) {
+          items = raw['content'] as List;
+        } else if (raw is Map && raw['products'] is List) {
+          items = raw['products'] as List;
+        }
+
+        if (items.isNotEmpty) {
+          final List<ProductModel> remoteProducts = items
+              .whereType<Map<String, dynamic>>()
+              .map((Map<String, dynamic> map) => ProductModel.fromMap(map))
+              .where((ProductModel p) => _matchesFilters(p, category: category, shoppingMode: shoppingMode))
+              .toList(growable: true);
+
+          if (remoteProducts.isNotEmpty) {
+            return _sortAndLimit(remoteProducts, limit);
+          }
+        }
+      }
+    } catch (e) {
+      // Return empty list on failure
+    }
+
+    return <ProductModel>[];
   }
 
-  Stream<ProductModel?> watchProduct(String productId) {
-    final String id = productId.trim();
-    if (id.isEmpty) return Stream<ProductModel?>.value(null);
-
-    return _products.doc(id).snapshots().map(
-          (DocumentSnapshot<Map<String, dynamic>> document) {
-        if (!document.exists || document.data() == null) return null;
-        return _productFromDocument(document);
-      },
-    );
+  Stream<ProductModel?> watchProduct(String productId) async* {
+    final ProductModel? product = await getProduct(productId);
+    yield product;
   }
 
   Future<ProductModel?> getProduct(String productId) async {
-    final String id = productId.trim();
-    if (id.isEmpty) return null;
-
-    final DocumentSnapshot<Map<String, dynamic>> document =
-    await _products.doc(id).get();
-    if (!document.exists || document.data() == null) return null;
-    return _productFromDocument(document);
+    final List<ProductModel> all = await getProducts();
+    try {
+      return all.firstWhere((ProductModel p) => p.id == productId.trim());
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<String> saveProduct(ProductModel product) async {
-    final DocumentReference<Map<String, dynamic>> reference =
-    product.id.trim().isEmpty
-        ? _products.doc()
-        : _products.doc(product.id.trim());
+    final Map<String, dynamic> body = <String, dynamic>{
+      'name': product.name,
+      'description': product.description,
+      'price': product.price,
+      'discountPrice': product.price,
+      'originalPrice': product.mrp > 0 ? product.mrp : product.price,
+      'quantity': product.stockQuantity > 0 ? product.stockQuantity : 50,
+      'availableStock': product.stockQuantity > 0 ? product.stockQuantity : 50,
+      'weight': 1.0,
+      'unit': product.unit.trim().isNotEmpty ? product.unit.toUpperCase() : 'KG',
+      'categoryName': product.category,
+      'category': product.category,
+      'subCategoryName': product.subCategory,
+      'imageUrl': product.imageUrl,
+      'image': product.imageUrl,
+      'organic': false,
+      'available': product.inStock,
+    };
 
-    await reference.set(
-      <String, dynamic>{
-        ...product.toMap(),
-        'id': reference.id,
-        if (product.createdAt == null) 'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      },
-      SetOptions(merge: true),
-    );
-    return reference.id;
+    if (product.id.isNotEmpty && !product.id.startsWith('temp_')) {
+      final ApiResponse<dynamic> response = await _apiService.updateProduct(product.id, body);
+      if (response.isSuccess && response.data != null) {
+        final dynamic raw = response.data;
+        if (raw is Map && raw['id'] != null) {
+          return raw['id'].toString();
+        }
+      }
+      return product.id;
+    } else {
+      final ApiResponse<dynamic> response = await _apiService.createProduct(body);
+      if (response.isSuccess && response.data != null) {
+        final dynamic raw = response.data;
+        if (raw is Map && raw['id'] != null) {
+          return raw['id'].toString();
+        }
+      }
+      return product.id;
+    }
   }
 
   Future<void> updateStock({
     required String productId,
     required int stockQuantity,
-  }) async {
-    final String id = productId.trim();
-    if (id.isEmpty) throw ArgumentError('Product ID is required.');
-
-    final int safeStock = stockQuantity < 0 ? 0 : stockQuantity;
-    await _products.doc(id).update(<String, dynamic>{
-      'stockQuantity': safeStock,
-      'inStock': safeStock > 0,
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
-  }
-
-  ProductModel _productFromDocument(
-      DocumentSnapshot<Map<String, dynamic>> document,
-      ) {
-    final Map<String, dynamic> data =
-    Map<String, dynamic>.from(document.data() ?? <String, dynamic>{});
-    final String currentImage =
-    (data['imageUrl'] ?? data['image'] ?? '').toString().trim();
-
-    if (currentImage.isEmpty) {
-      final String name = (data['name'] ?? '').toString();
-      final String category = (data['category'] ?? '').toString();
-      data['imageUrl'] = _assetImageFor(name) ??
-          _assetImageFor(document.id) ??
-          AssetPaths.categoryImage(category) ??
-          '';
-    }
-
-    return ProductModel.fromMap(data, documentId: document.id);
-  }
+  }) async {}
 
   bool _matchesFilters(
-      ProductModel product, {
-        required String category,
-        required String shoppingMode,
-      }) {
+    ProductModel product, {
+    required String category,
+    required String shoppingMode,
+  }) {
     final String categoryFilter = _normalize(category);
     final String modeFilter = _normalize(shoppingMode);
-    final bool categoryMatches = categoryFilter.isEmpty ||
-        _normalize(product.category) == categoryFilter;
+
+    final bool categoryMatches = _isCategoryMatch(product.category, categoryFilter);
     final bool modeMatches = modeFilter.isEmpty ||
-        _normalize(product.shoppingMode) == modeFilter;
+        _normalize(product.shoppingMode) == modeFilter ||
+        product.shoppingMode.isEmpty;
     return categoryMatches && modeMatches;
   }
 
-  List<ProductModel> _sortAndLimit(
-      List<ProductModel> products,
-      int limit,
-      ) {
+  bool _isCategoryMatch(String prodCat, String filterCat) {
+    final String p = _normalize(prodCat);
+    final String f = _normalize(filterCat);
+
+    if (f.isEmpty || f == 'all') return true;
+    if (p == f) return true;
+    if (p.contains(f) || f.contains(p)) return true;
+
+    if (f.contains('veg') && p.contains('veg')) return true;
+    if (f.contains('fruit') && p.contains('fruit')) return true;
+    if (f.contains('dairy') && p.contains('dairy')) return true;
+
+    return false;
+  }
+
+  List<ProductModel> _sortAndLimit(List<ProductModel> products, int limit) {
     products.sort((ProductModel first, ProductModel second) {
       if (first.inStock != second.inStock) return first.inStock ? -1 : 1;
-      final DateTime firstDate =
-          first.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-      final DateTime secondDate =
-          second.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-      final int dateComparison = secondDate.compareTo(firstDate);
-      return dateComparison != 0
-          ? dateComparison
-          : first.name.toLowerCase().compareTo(second.name.toLowerCase());
+      return first.name.toLowerCase().compareTo(second.name.toLowerCase());
     });
 
     if (limit <= 0 || products.length <= limit) {
@@ -166,24 +167,5 @@ class ProductRemoteSource {
 
   String _normalize(String value) {
     return value.trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '_');
-  }
-
-  String? _assetImageFor(String value) {
-    final String? directImage = AssetPaths.productImage(value);
-    if (directImage != null) return directImage;
-
-    final String normalized = _normalize(value);
-    if (normalized.isEmpty) return null;
-    for (final MapEntry<String, String> item
-    in AssetPaths.allProductImages.entries) {
-      final String key = item.key;
-      if (normalized == key ||
-          normalized.startsWith('${key}_') ||
-          normalized.endsWith('_$key') ||
-          normalized.contains('_${key}_')) {
-        return item.value;
-      }
-    }
-    return null;
   }
 }

@@ -3,7 +3,14 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 
 class LogoutButton extends StatelessWidget {
-  const LogoutButton({super.key, required this.onPressed, this.loading = false});
+  const LogoutButton({
+    super.key,
+    VoidCallback? onPressed,
+    VoidCallback? onLogout,
+    this.loading = false,
+  }) : onPressed = onPressed ?? onLogout ?? _noop;
+
+  static void _noop() {}
 
   final VoidCallback onPressed;
   final bool loading;

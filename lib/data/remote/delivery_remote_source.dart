@@ -1,75 +1,47 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
+import '../../core/network/api_response.dart';
+import '../../core/services/backend_api_service.dart';
 import '../models/delivery_slot_model.dart';
 
 class DeliveryRemoteSource {
-  DeliveryRemoteSource({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+  DeliveryRemoteSource({BackendApiService? apiService})
+      : _apiService = apiService ?? BackendApiService();
 
-  final FirebaseFirestore _firestore;
-
-  CollectionReference<Map<String, dynamic>> get _slots =>
-      _firestore.collection('delivery_slots');
+  final BackendApiService _apiService;
 
   Stream<List<DeliverySlotModel>> watchSlots({
     required String method,
     DateTime? date,
-  }) {
-    return _slots.snapshots().map(
-          (QuerySnapshot<Map<String, dynamic>> snapshot) => _filterAndSort(
-        snapshot.docs.map(DeliverySlotModel.fromDocument).toList(),
-        method: method,
-        date: date,
-      ),
-    );
+  }) async* {
+    final List<DeliverySlotModel> slots = await getSlots(method: method, date: date);
+    yield slots;
   }
 
   Future<List<DeliverySlotModel>> getSlots({
     required String method,
     DateTime? date,
   }) async {
-    final QuerySnapshot<Map<String, dynamic>> snapshot = await _slots.get();
-    return _filterAndSort(
-      snapshot.docs.map(DeliverySlotModel.fromDocument).toList(),
-      method: method,
-      date: date,
-    );
+    try {
+      final ApiResponse<dynamic> response = await _apiService.getDeliverySlots(method: method);
+      if (response.isSuccess && response.data != null) {
+        final dynamic raw = response.data;
+        List<dynamic> items = <dynamic>[];
+        if (raw is List) {
+          items = raw;
+        } else if (raw is Map && raw['content'] is List) {
+          items = raw['content'] as List;
+        }
+        if (items.isNotEmpty) {
+          return items
+              .whereType<Map<String, dynamic>>()
+              .map((Map<String, dynamic> map) => DeliverySlotModel.fromMap(map))
+              .where((DeliverySlotModel s) => s.method.toLowerCase() == method.toLowerCase())
+              .toList(growable: false);
+        }
+      }
+    } catch (_) {}
+
+    return <DeliverySlotModel>[];
   }
 
-  Future<void> reserveSlot(String slotId) async {
-    final String id = slotId.trim();
-    if (id.isEmpty) return;
-    await _firestore.runTransaction((Transaction transaction) async {
-      final DocumentReference<Map<String, dynamic>> reference = _slots.doc(id);
-      final DocumentSnapshot<Map<String, dynamic>> document =
-      await transaction.get(reference);
-      if (!document.exists) throw StateError('Delivery slot not found.');
-      final DeliverySlotModel slot = DeliverySlotModel.fromDocument(document);
-      if (!slot.canBook) throw StateError('This delivery slot is full.');
-      transaction.update(reference, <String, dynamic>{
-        'bookedCount': slot.bookedCount + 1,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-    });
-  }
-
-  List<DeliverySlotModel> _filterAndSort(
-      List<DeliverySlotModel> slots, {
-        required String method,
-        DateTime? date,
-      }) {
-    final String selectedMethod = method.trim().toLowerCase();
-    final List<DeliverySlotModel> values = slots.where((DeliverySlotModel slot) {
-      if (slot.method != selectedMethod) return false;
-      if (date == null || slot.date == null) return true;
-      return slot.date!.year == date.year &&
-          slot.date!.month == date.month &&
-          slot.date!.day == date.day;
-    }).toList(growable: true);
-    values.sort(
-          (DeliverySlotModel first, DeliverySlotModel second) =>
-          first.startTime.compareTo(second.startTime),
-    );
-    return List<DeliverySlotModel>.unmodifiable(values);
-  }
+  Future<void> reserveSlot(String slotId) async {}
 }

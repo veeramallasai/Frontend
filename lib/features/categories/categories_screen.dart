@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
@@ -25,11 +23,22 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       title: 'Vegetables',
       subtitle: 'Fresh from trusted farms',
       description:
-      'Daily essentials, leafy greens, roots and fresh vegetables.',
+      'Daily essentials, roots and fresh cooking vegetables.',
       image: 'assets/images/categories/vegetables.png',
       fallbackIcon: Icons.eco_rounded,
       backgroundColor: Color(0xFFE8F6ED),
       accentColor: Color(0xFF168447),
+    ),
+    _CategoryData(
+      id: 'leafy_greens',
+      title: 'Leafy Greens',
+      subtitle: 'Nutritious & fresh greens',
+      description:
+      'Fresh palak, coriander, mint, fenugreek, lettuce and herbs.',
+      image: 'assets/images/categories/vegetables.png',
+      fallbackIcon: Icons.grass_rounded,
+      backgroundColor: Color(0xFFE3F9EC),
+      accentColor: Color(0xFF0F9F4A),
     ),
     _CategoryData(
       id: 'fruits',
@@ -76,59 +85,9 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     _loadSavedMode();
   }
 
-  Future<void> _loadSavedMode() async {
-    try {
-      final User? user = FirebaseAuth.instance.currentUser;
+  Future<void> _loadSavedMode() async {}
 
-      if (user == null) {
-        return;
-      }
-
-      final DocumentSnapshot<Map<String, dynamic>> snapshot =
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .get();
-
-      final String value =
-      (snapshot.data()?['shoppingMode'] ?? _shoppingMode).toString();
-
-      if (!mounted) {
-        return;
-      }
-
-      if (value == 'home' || value == 'shop') {
-        setState(() {
-          _shoppingMode = value;
-        });
-      }
-    } catch (_) {
-      // Current selected mode remains active.
-    }
-  }
-
-  Future<void> _saveMode(String mode) async {
-    try {
-      final User? user = FirebaseAuth.instance.currentUser;
-
-      if (user == null) {
-        return;
-      }
-
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .set(
-        <String, dynamic>{
-          'shoppingMode': mode,
-          'updatedAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
-    } catch (_) {
-      // UI mode continues even if Firestore is temporarily unavailable.
-    }
-  }
+  Future<void> _saveMode(String mode) async {}
 
   void _go(
       String route, {

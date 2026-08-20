@@ -71,6 +71,7 @@ class AppRouter {
         return _page(
           OtpScreen(
             phoneNumber: (args['phoneNumber'] ?? '').toString(),
+            email: args['email']?.toString(),
             userId: args['userId']?.toString(),
             source: args['source']?.toString(),
           ),

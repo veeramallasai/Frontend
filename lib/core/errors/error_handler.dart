@@ -1,11 +1,8 @@
 import 'dart:async';
 
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' show ClientException;
 
 import 'app_exception.dart';
-import 'auth_exception.dart';
-import 'firestore_exception.dart';
 import 'network_exception.dart';
 
 class ErrorHandler {
@@ -13,12 +10,6 @@ class ErrorHandler {
 
   static AppException handle(Object error, [StackTrace? stackTrace]) {
     if (error is AppException) return error;
-    if (error is FirebaseAuthException) {
-      return AuthException.fromCode(error.code, details: error.message);
-    }
-    if (error is FirebaseException) {
-      return FirestoreException.fromCode(error.code, details: error.message);
-    }
     if (error is TimeoutException) return NetworkException.timeout;
     if (error is ClientException) {
       return NetworkException(

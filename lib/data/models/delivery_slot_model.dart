@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class DeliverySlotModel {
   const DeliverySlotModel({
     required this.id,
@@ -27,15 +25,6 @@ class DeliverySlotModel {
 
   bool get hasCapacity => capacity <= 0 || bookedCount < capacity;
   bool get canBook => isAvailable && hasCapacity;
-
-  factory DeliverySlotModel.fromDocument(
-      DocumentSnapshot<Map<String, dynamic>> document,
-      ) {
-    return DeliverySlotModel.fromMap(
-      document.data() ?? <String, dynamic>{},
-      documentId: document.id,
-    );
-  }
 
   factory DeliverySlotModel.fromMap(
       Map<String, dynamic> map, {
@@ -65,7 +54,7 @@ class DeliverySlotModel {
     'isAvailable': isAvailable,
     'capacity': capacity,
     'bookedCount': bookedCount,
-    if (date != null) 'date': Timestamp.fromDate(date!),
+    if (date != null) 'date': date!.toIso8601String(),
   };
 }
 
@@ -94,7 +83,6 @@ bool _toBool(dynamic value, {bool fallback = false}) {
 }
 
 DateTime? _toDateTime(dynamic value) {
-  if (value is Timestamp) return value.toDate();
   if (value is DateTime) return value;
   return DateTime.tryParse(value?.toString() ?? '');
 }

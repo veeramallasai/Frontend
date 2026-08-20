@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class PaymentModel {
   const PaymentModel({
     required this.id,
@@ -40,13 +38,9 @@ class PaymentModel {
   final DateTime? updatedAt;
 
   bool get isCashOnDelivery => method == 'cash_on_delivery';
-
   bool get isPaid => status == 'paid' || status == 'paid_test';
-
   bool get isPending => status == 'pending';
-
   bool get isFailed => status == 'failed';
-
   bool get isRefunded => status == 'refunded';
 
   String get methodLabel {
@@ -84,31 +78,28 @@ class PaymentModel {
     }
   }
 
-  factory PaymentModel.fromDocument(
-      DocumentSnapshot<Map<String, dynamic>> document,
-      ) {
-    return PaymentModel.fromMap(
-      document.data() ?? <String, dynamic>{},
-      documentId: document.id,
-    );
-  }
-
   factory PaymentModel.fromMap(
       Map<String, dynamic> map, {
         String documentId = '',
       }) {
     final String resolvedId = _text(
-      documentId.isNotEmpty ? documentId : map['id'] ?? map['paymentId'],
+      documentId.isNotEmpty
+          ? documentId
+          : map['id'] ?? map['paymentRecordId'],
+    );
+    final String resolvedPaymentId = _text(
+      map['paymentId'] ?? map['id'],
+      fallback: 'PAY-${DateTime.now().millisecondsSinceEpoch}',
     );
 
     return PaymentModel(
-      id: resolvedId,
-      paymentId: _text(map['paymentId'], fallback: resolvedId),
+      id: resolvedId.isNotEmpty ? resolvedId : resolvedPaymentId,
+      paymentId: resolvedPaymentId,
       userId: _text(map['userId']),
       orderId: _text(map['orderId']),
       orderNumber: _text(map['orderNumber']),
-      method: _text(map['method'], fallback: 'cash_on_delivery').toLowerCase(),
-      status: _text(map['status'], fallback: 'pending').toLowerCase(),
+      method: _text(map['method'] ?? map['paymentMethod'], fallback: 'cash_on_delivery').toLowerCase(),
+      status: _text(map['status'] ?? map['paymentStatus'], fallback: 'pending').toLowerCase(),
       subtotal: _toDouble(map['subtotal']),
       productSavings: _toDouble(map['productSavings']),
       couponCode: _text(map['couponCode']),
@@ -116,36 +107,31 @@ class PaymentModel {
       deliveryFee: _toDouble(map['deliveryFee']),
       totalAmount: _toDouble(map['totalAmount']),
       transactionId: _text(map['transactionId']),
-      gateway: _text(
-        map['gateway'],
-        fallback: _text(map['method'], fallback: 'cash_on_delivery'),
-      ),
+      gateway: _text(map['gateway'], fallback: 'Razorpay / Local'),
       createdAt: _toDateTime(map['createdAt']),
       updatedAt: _toDateTime(map['updatedAt']),
     );
   }
 
-  Map<String, dynamic> toMap() {
-    return <String, dynamic>{
-      'id': id,
-      'paymentId': paymentId,
-      'userId': userId,
-      'orderId': orderId,
-      'orderNumber': orderNumber,
-      'method': method,
-      'status': status,
-      'subtotal': subtotal,
-      'productSavings': productSavings,
-      'couponCode': couponCode,
-      'couponDiscount': couponDiscount,
-      'deliveryFee': deliveryFee,
-      'totalAmount': totalAmount,
-      'transactionId': transactionId,
-      'gateway': gateway,
-      if (createdAt != null) 'createdAt': Timestamp.fromDate(createdAt!),
-      if (updatedAt != null) 'updatedAt': Timestamp.fromDate(updatedAt!),
-    };
-  }
+  Map<String, dynamic> toMap() => <String, dynamic>{
+    'id': id,
+    'paymentId': paymentId,
+    'userId': userId,
+    'orderId': orderId,
+    'orderNumber': orderNumber,
+    'method': method,
+    'status': status,
+    'subtotal': subtotal,
+    'productSavings': productSavings,
+    'couponCode': couponCode,
+    'couponDiscount': couponDiscount,
+    'deliveryFee': deliveryFee,
+    'totalAmount': totalAmount,
+    'transactionId': transactionId,
+    'gateway': gateway,
+    if (createdAt != null) 'createdAt': createdAt!.toIso8601String(),
+    if (updatedAt != null) 'updatedAt': updatedAt!.toIso8601String(),
+  };
 
   PaymentModel copyWith({
     String? id,
@@ -195,17 +181,11 @@ String _text(dynamic value, {String fallback = ''}) {
 
 double _toDouble(dynamic value, {double fallback = 0}) {
   if (value is num) return value.toDouble();
-
-  final String cleaned = value
-      ?.toString()
-      .replaceAll(',', '')
-      .replaceAll(RegExp(r'[^0-9.\-]'), '') ??
-      '';
+  final String cleaned = value?.toString().replaceAll(',', '').replaceAll(RegExp(r'[^0-9.\-]'), '') ?? '';
   return double.tryParse(cleaned) ?? fallback;
 }
 
 DateTime? _toDateTime(dynamic value) {
-  if (value is Timestamp) return value.toDate();
   if (value is DateTime) return value;
   if (value is int) return DateTime.fromMillisecondsSinceEpoch(value);
   return DateTime.tryParse(value?.toString() ?? '');
@@ -214,13 +194,9 @@ DateTime? _toDateTime(dynamic value) {
 String _label(String value, {required String fallback}) {
   final String normalized = value.trim();
   if (normalized.isEmpty) return fallback;
-
   return normalized
       .split('_')
       .where((String part) => part.isNotEmpty)
-      .map(
-        (String part) =>
-    '${part.substring(0, 1).toUpperCase()}${part.substring(1)}',
-  )
+      .map((String part) => '${part.substring(0, 1).toUpperCase()}${part.substring(1)}')
       .join(' ');
 }

@@ -15,11 +15,7 @@ dependencies:
   google_fonts: ^6.1.0
   animate_do: ^3.0.2
   shimmer: ^3.0.0
-
-  firebase_core: ^2.24.2
-  firebase_auth: ^4.17.4
-  cloud_firestore: ^4.15.4
-  firebase_messaging: ^14.7.10
+  provider: ^6.1.2
 
   google_sign_in: ^7.2.0
 

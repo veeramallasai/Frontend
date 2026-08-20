@@ -1,21 +1,21 @@
-import 'environment_config.dart';
+import 'package:flutter/foundation.dart';
 
 class BackendConfig {
   BackendConfig._();
 
-  static const String defaultRailwayUrl =
-      'https://farmtohome-production-ca90.up.railway.app';
+  static const String defaultDeployedUrl = 'https://farmtohome-production-ca90.up.railway.app';
+  static const String defaultLocalUrl = 'http://localhost:8082';
 
   static const String _overrideBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: defaultRailwayUrl,
+    defaultValue: '',
   );
 
   static String get baseUrl {
-    final String configured = _overrideBaseUrl.trim().isNotEmpty
-        ? _overrideBaseUrl.trim()
-        : defaultRailwayUrl;
-    return _withoutTrailingSlash(configured);
+    if (_overrideBaseUrl.trim().isNotEmpty) {
+      return _withoutTrailingSlash(_overrideBaseUrl.trim());
+    }
+    return defaultDeployedUrl;
   }
 
   static const Duration connectTimeout = Duration(seconds: 20);

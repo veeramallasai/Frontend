@@ -1,50 +1,55 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
+import '../../core/network/api_response.dart';
+import '../../core/services/backend_api_service.dart';
 import '../models/user_model.dart';
 
 class UserRemoteSource {
-  UserRemoteSource({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+  UserRemoteSource({BackendApiService? apiService})
+      : _apiService = apiService ?? BackendApiService();
 
-  final FirebaseFirestore _firestore;
+  final BackendApiService _apiService;
+  final Map<String, UserModel> _users = <String, UserModel>{};
 
-  DocumentReference<Map<String, dynamic>> _user(String userId) {
-    final String id = userId.trim();
-    if (id.isEmpty) throw ArgumentError('User ID cannot be empty.');
-    return _firestore.collection('users').doc(id);
+  Stream<UserModel?> watchUser(String userId) async* {
+    final UserModel? user = await getUser(userId);
+    yield user;
   }
-
-  Stream<UserModel?> watchUser(String userId) =>
-      _user(userId).snapshots().map(
-            (DocumentSnapshot<Map<String, dynamic>> document) =>
-                document.exists ? UserModel.fromDocument(document) : null,
-          );
 
   Future<UserModel?> getUser(String userId) async {
-    final DocumentSnapshot<Map<String, dynamic>> document =
-        await _user(userId).get();
-    return document.exists ? UserModel.fromDocument(document) : null;
+    try {
+      final ApiResponse<dynamic> response = await _apiService.getProfile();
+      if (response.isSuccess && response.data is Map<String, dynamic>) {
+        final UserModel remote = UserModel.fromMap(response.data as Map<String, dynamic>);
+        _users[remote.uid] = remote;
+        _users[userId.trim()] = remote;
+        return remote;
+      }
+    } catch (_) {}
+    return _users[userId.trim()];
   }
 
-  Future<void> saveUser(UserModel user) => _user(user.uid).set(
-        <String, dynamic>{
-          ...user.toMap(),
-          if (user.createdAt == null) 'createdAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
+  Future<void> saveUser(UserModel user) async {
+    _users[user.uid] = user;
+    try {
+      await _apiService.updateProfile(user.toMap());
+    } catch (_) {}
+  }
 
   Future<void> updateFields(
     String userId,
     Map<String, dynamic> fields,
-  ) => _user(userId).set(
-        <String, dynamic>{
-          ...fields,
-          'updatedAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
+  ) async {
+    final UserModel? existing = _users[userId.trim()];
+    if (existing != null) {
+      final Map<String, dynamic> updatedMap = <String, dynamic>{
+        ...existing.toMap(),
+        ...fields,
+      };
+      _users[userId.trim()] = UserModel.fromMap(updatedMap);
+    }
+    try {
+      await _apiService.updateProfile(fields);
+    } catch (_) {}
+  }
 
   Future<void> deactivate(String userId) => updateFields(
         userId,

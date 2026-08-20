@@ -1,71 +1,48 @@
-import 'package:firebase_auth/firebase_auth.dart';
+import '../../core/network/api_response.dart';
+import '../../core/services/backend_api_service.dart';
 
 class AuthRemoteSource {
-  AuthRemoteSource({FirebaseAuth? auth}) : _auth = auth ?? FirebaseAuth.instance;
+  AuthRemoteSource({BackendApiService? apiService})
+      : _apiService = apiService ?? BackendApiService();
 
-  final FirebaseAuth _auth;
+  final BackendApiService _apiService;
 
-  User? get currentUser => _auth.currentUser;
-  Stream<User?> watchAuthState() => _auth.authStateChanges();
-
-  Future<UserCredential> signInWithEmail({
+  Future<ApiResponse<dynamic>> signInWithEmail({
     required String email,
     required String password,
-  }) => _auth.signInWithEmailAndPassword(
-        email: email.trim().toLowerCase(),
+  }) =>
+      _apiService.login(
+        identifier: email.trim().toLowerCase(),
         password: password,
       );
 
-  Future<UserCredential> registerWithEmail({
+  Future<ApiResponse<dynamic>> registerWithEmail({
     required String email,
     required String password,
-  }) => _auth.createUserWithEmailAndPassword(
-        email: email.trim().toLowerCase(),
-        password: password,
+    required String firstName,
+    String lastName = '',
+    String phone = '',
+  }) =>
+      _apiService.register(<String, dynamic>{
+        'firstName': firstName.trim(),
+        'lastName': lastName.trim(),
+        'email': email.trim().toLowerCase(),
+        'phone': phone.trim(),
+        'password': password,
+        'role': 'CUSTOMER',
+      });
+
+  Future<ApiResponse<dynamic>> verifyEmailOtp({
+    required String email,
+    required String otpCode,
+  }) =>
+      _apiService.verifyEmailOtp(
+        email: email.trim(),
+        otpCode: otpCode.trim(),
       );
 
-  Future<UserCredential> signInWithCredential(AuthCredential credential) =>
-      _auth.signInWithCredential(credential);
+  Future<ApiResponse<dynamic>> sendPasswordReset(String email) =>
+      _apiService.forgotPassword(email.trim().toLowerCase());
 
-  Future<UserCredential> verifyPhoneOtp({
-    required String verificationId,
-    required String smsCode,
-  }) => signInWithCredential(
-        PhoneAuthProvider.credential(
-          verificationId: verificationId.trim(),
-          smsCode: smsCode.trim(),
-        ),
-      );
-
-  Future<void> requestPhoneOtp({
-    required String phoneNumber,
-    required void Function(String verificationId, int? resendToken) onCodeSent,
-    required void Function(FirebaseAuthException error) onFailed,
-    void Function(PhoneAuthCredential credential)? onAutoVerified,
-    void Function(String verificationId)? onTimeout,
-    int? forceResendingToken,
-  }) => _auth.verifyPhoneNumber(
-        phoneNumber: phoneNumber.trim(),
-        forceResendingToken: forceResendingToken,
-        verificationCompleted: (PhoneAuthCredential credential) async {
-          await _auth.signInWithCredential(credential);
-          onAutoVerified?.call(credential);
-        },
-        verificationFailed: onFailed,
-        codeSent: onCodeSent,
-        codeAutoRetrievalTimeout: (String verificationId) =>
-            onTimeout?.call(verificationId),
-      );
-
-  Future<void> sendPasswordReset(String email) =>
-      _auth.sendPasswordResetEmail(email: email.trim().toLowerCase());
-
-  Future<void> sendEmailVerification() async {
-    final User? user = currentUser;
-    if (user == null) throw StateError('Please login to continue.');
-    if (!user.emailVerified) await user.sendEmailVerification();
-  }
-
-  Future<void> reload() => currentUser?.reload() ?? Future<void>.value();
-  Future<void> signOut() => _auth.signOut();
+  Future<ApiResponse<dynamic>> getProfile() => _apiService.getProfile();
 }

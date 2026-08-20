@@ -1,9 +1,11 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../app/app_routes.dart';
+import '../../core/errors/app_exception.dart';
+import '../../core/errors/network_exception.dart';
+import '../../core/network/api_response.dart';
+import '../../core/services/backend_api_service.dart';
 import '../../core/theme/app_colors.dart';
 import 'widgets/password_strength.dart';
 import 'widgets/register_form.dart';
@@ -17,6 +19,7 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final BackendApiService _apiService = BackendApiService();
 
   final TextEditingController _firstNameController =
   TextEditingController();
@@ -44,127 +47,95 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _apiService.dispose();
     super.dispose();
   }
 
   String _normalizePhone(String value) {
-    String digits = value.replaceAll(
-      RegExp(r'\D'),
-      '',
-    );
-
-    if (digits.startsWith('91') &&
-        digits.length == 12) {
+    String digits = value.replaceAll(RegExp(r'\D'), '');
+    if (digits.startsWith('91') && digits.length == 12) {
       digits = digits.substring(2);
     }
-
     return digits;
   }
 
   String? _validateFirstName(String? value) {
     final String text = value?.trim() ?? '';
-
-    if (text.isEmpty) {
-      return 'Enter your first name';
-    }
-
-    if (text.length < 2) {
-      return 'Enter a valid first name';
-    }
-
+    if (text.isEmpty) return 'Enter your first name';
+    if (text.length < 2) return 'Enter a valid first name';
     return null;
   }
 
   String? _validateLastName(String? value) {
     final String text = value?.trim() ?? '';
-
-    if (text.isEmpty) {
-      return 'Enter your last name';
-    }
-
-    if (text.length < 2) {
-      return 'Enter a valid last name';
-    }
-
+    if (text.isEmpty) return 'Enter your last name';
+    if (text.length < 2) return 'Enter a valid last name';
     return null;
   }
 
   String? _validatePhone(String? value) {
-    final String phone =
-    _normalizePhone(value ?? '');
-
-    if (!RegExp(r'^[6-9]\d{9}$')
-        .hasMatch(phone)) {
+    final String phone = _normalizePhone(value ?? '');
+    if (!RegExp(r'^[6-9]\d{9}$').hasMatch(phone)) {
       return 'Enter a valid 10-digit mobile number';
     }
-
     return null;
   }
 
   String? _validateEmail(String? value) {
     final String email = value?.trim() ?? '';
-
-    if (email.isEmpty) {
-      return 'Enter your email address';
-    }
-
-    if (!RegExp(
-      r'^[^\s@]+@[^\s@]+\.[^\s@]+$',
-    ).hasMatch(email)) {
+    if (email.isEmpty) return 'Enter your email address';
+    if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(email)) {
       return 'Enter a valid email address';
     }
-
     return null;
   }
 
   String? _validatePassword(String? value) {
     final String password = value ?? '';
-
-    if (password.length < 8) {
-      return 'Password must contain at least 8 characters';
-    }
-
-    if (!RegExp(r'[A-Z]').hasMatch(password)) {
-      return 'Add at least one uppercase letter';
-    }
-
-    if (!RegExp(r'[a-z]').hasMatch(password)) {
-      return 'Add at least one lowercase letter';
-    }
-
-    if (!RegExp(r'\d').hasMatch(password)) {
-      return 'Add at least one number';
-    }
-
+    if (password.length < 8) return 'Password must contain at least 8 characters';
+    if (!RegExp(r'[A-Z]').hasMatch(password)) return 'Add at least one uppercase letter';
+    if (!RegExp(r'[a-z]').hasMatch(password)) return 'Add at least one lowercase letter';
+    if (!RegExp(r'\d').hasMatch(password)) return 'Add at least one number';
     return null;
   }
 
-  String? _validateConfirmPassword(
-      String? value,
-      ) {
-    if ((value ?? '').isEmpty) {
-      return 'Confirm your password';
-    }
-
-    if (value != _passwordController.text) {
-      return 'Passwords do not match';
-    }
-
+  String? _validateConfirmPassword(String? value) {
+    if ((value ?? '').isEmpty) return 'Confirm your password';
+    if (value != _passwordController.text) return 'Passwords do not match';
     return null;
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: AppColors.error,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          content: Text(
+            message,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      );
   }
 
   Future<void> _register() async {
     FocusScope.of(context).unfocus();
 
-    if (!(_formKey.currentState?.validate() ??
-        false)) {
+    if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
 
     if (!_termsAccepted) {
-      _showMessage(
-        'Please accept Terms of Service and Privacy Policy.',
-      );
+      _showMessage('Please accept Terms of Service and Privacy Policy.');
       return;
     }
 
@@ -173,102 +144,110 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
 
     try {
-      final String firstName =
-      _firstNameController.text.trim();
+      final String firstName = _firstNameController.text.trim();
+      final String lastName = _lastNameController.text.trim();
+      final String email = _emailController.text.trim().toLowerCase();
+      final String phone = '+91${_normalizePhone(_phoneController.text)}';
+      final String password = _passwordController.text;
 
-      final String lastName =
-      _lastNameController.text.trim();
+      final ApiResponse<dynamic> response = await _apiService.register(<String, dynamic>{
+        'firstName': firstName,
+        'lastName': lastName,
+        'email': email,
+        'phone': phone,
+        'phoneNumber': phone,
+        'password': password,
+        'role': 'CUSTOMER',
+      });
 
-      final String email =
-      _emailController.text
-          .trim()
-          .toLowerCase();
+      debugPrint('REGISTER STATUS CODE: ${response.statusCode}');
+      debugPrint('REGISTER RESPONSE MESSAGE: ${response.message}');
+      debugPrint('REGISTER DATA: ${response.data}');
 
-      final String phone =
-          '+91${_normalizePhone(_phoneController.text)}';
+      if (!mounted) return;
 
-      final UserCredential credential =
-      await FirebaseAuth.instance
-          .createUserWithEmailAndPassword(
-        email: email,
-        password: _passwordController.text,
-      );
+      if (response.isSuccess) {
+        final Map<String, dynamic> data =
+            response.data is Map<String, dynamic> ? (response.data as Map<String, dynamic>) : <String, dynamic>{};
 
-      final User? user = credential.user;
+        final String userId = (data['id'] ?? data['userId'] ?? data['uid'] ?? '').toString();
 
-      if (user == null) {
-        throw FirebaseAuthException(
-          code: 'registration-failed',
-          message:
-          'Unable to create your account.',
+        Navigator.of(context).pushReplacementNamed(
+          AppRoutes.otp,
+          arguments: <String, dynamic>{
+            'phoneNumber': phone,
+            'email': email,
+            'userId': userId,
+            'source': 'register',
+          },
+        );
+      } else if (response.message.contains('VERIFICATION_PENDING') || response.message.toLowerCase().contains('verification is pending')) {
+        _showMessage('Account exists but email verification is pending. Redirecting to OTP verification...');
+        Future<void>.delayed(const Duration(milliseconds: 800), () {
+          if (!mounted) return;
+          Navigator.of(context).pushReplacementNamed(
+            AppRoutes.otp,
+            arguments: <String, dynamic>{
+              'phoneNumber': phone,
+              'email': email,
+              'source': 'register',
+            },
+          );
+        });
+      } else if (response.message.contains('ACCOUNT_ALREADY_EXISTS') || response.message.toLowerCase().contains('already exists')) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(response.message.isNotEmpty ? response.message : 'Account already exists. Please login.'),
+            action: SnackBarAction(
+              label: 'LOGIN',
+              textColor: Colors.amber,
+              onPressed: _goLogin,
+            ),
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      } else {
+        _showMessage(
+          response.message.isNotEmpty
+              ? response.message
+              : 'Registration failed. Please try again.',
         );
       }
-
-      final String displayName =
-      '$firstName $lastName'.trim();
-
-      await user.updateDisplayName(
-        displayName,
-      );
-
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .set(
-        <String, dynamic>{
-          'uid': user.uid,
-          'firstName': firstName,
-          'lastName': lastName,
-          'displayName': displayName,
-          'email': email,
-          'phoneNumber': phone,
-          'photoUrl': '',
-          'phoneVerified': false,
-          'shoppingMode': 'home',
-          'accountType': 'customer',
-          'isActive': true,
-          'createdAt':
-          FieldValue.serverTimestamp(),
-          'updatedAt':
-          FieldValue.serverTimestamp(),
-          'lastLoginAt':
-          FieldValue.serverTimestamp(),
-        },
-        SetOptions(
-          merge: true,
-        ),
-      );
-
+    } catch (e) {
+      debugPrint('REGISTER EXCEPTION: $e');
       if (!mounted) return;
+      String errorMsg = 'Unable to create account. Please try again.';
+      bool isConflict = false;
+      if (e is NetworkException) {
+        if (e.statusCode == 409) isConflict = true;
+        if (e.details is Map &&
+            (e.details as Map)['message'] != null &&
+            (e.details as Map)['message'].toString().trim().isNotEmpty) {
+          errorMsg = (e.details as Map)['message'].toString();
+        } else if (e.statusCode == 409) {
+          errorMsg = 'An account already exists with this email or phone number. Please login.';
+        } else if (e.message.isNotEmpty) {
+          errorMsg = e.message;
+        }
+      } else if (e is AppException) {
+        errorMsg = e.message;
+      }
 
-      Navigator.of(context)
-          .pushReplacementNamed(
-        AppRoutes.otp,
-        arguments: <String, dynamic>{
-          'phoneNumber': phone,
-          'userId': user.uid,
-          'source': 'register',
-        },
-      );
-    } on FirebaseAuthException catch (error) {
-      if (!mounted) return;
-
-      _showMessage(
-        _firebaseErrorMessage(error),
-      );
-    } on FirebaseException catch (error) {
-      if (!mounted) return;
-
-      _showMessage(
-        error.message ??
-            'Unable to save account information.',
-      );
-    } catch (_) {
-      if (!mounted) return;
-
-      _showMessage(
-        'Unable to create account. Please try again.',
-      );
+      if (isConflict) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMsg),
+            action: SnackBarAction(
+              label: 'LOGIN',
+              textColor: Colors.amber,
+              onPressed: _goLogin,
+            ),
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      } else {
+        _showMessage(errorMsg);
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -278,87 +257,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
-  String _firebaseErrorMessage(
-      FirebaseAuthException error,
-      ) {
-    switch (error.code) {
-      case 'email-already-in-use':
-        return 'An account already exists with this email.';
-
-      case 'invalid-email':
-        return 'Enter a valid email address.';
-
-      case 'weak-password':
-        return 'Please choose a stronger password.';
-
-      case 'network-request-failed':
-        return 'Check your internet connection and try again.';
-
-      case 'too-many-requests':
-        return 'Too many attempts. Please try again later.';
-
-      case 'operation-not-allowed':
-        return 'Email/Password authentication is not enabled in Firebase.';
-
-      default:
-        return error.message ??
-            'Registration failed.';
-    }
-  }
-
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          behavior:
-          SnackBarBehavior.floating,
-          backgroundColor:
-          AppColors.error,
-          margin:
-          const EdgeInsets.all(16),
-          shape:
-          RoundedRectangleBorder(
-            borderRadius:
-            BorderRadius.circular(16),
-          ),
-          content: Text(
-            message,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight:
-              FontWeight.w700,
-            ),
-          ),
-        ),
-      );
-  }
-
   void _goLogin() {
     if (Navigator.of(context).canPop()) {
       Navigator.of(context).pop();
       return;
     }
 
-    Navigator.of(context)
-        .pushReplacementNamed(
+    Navigator.of(context).pushReplacementNamed(
       AppRoutes.login,
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final bool desktop =
-        MediaQuery.sizeOf(context).width >=
-            900;
+    final bool desktop = MediaQuery.sizeOf(context).width >= 900;
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      backgroundColor:
-      AppColors.background,
+      backgroundColor: AppColors.background,
       body: Container(
-        decoration:
-        const BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -370,68 +288,40 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         ),
         child: SafeArea(
-          child:
-          SingleChildScrollView(
-            keyboardDismissBehavior:
-            ScrollViewKeyboardDismissBehavior
-                .onDrag,
-            padding:
-            EdgeInsets.symmetric(
-              horizontal:
-              desktop ? 28 : 16,
+          child: SingleChildScrollView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            padding: EdgeInsets.symmetric(
+              horizontal: desktop ? 28 : 16,
               vertical: 18,
             ),
             child: Center(
-              child:
-              ConstrainedBox(
-                constraints:
-                const BoxConstraints(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
                   maxWidth: 1050,
                 ),
-                child:
-                Column(
-                  crossAxisAlignment:
-                  CrossAxisAlignment
-                      .stretch,
-                  children:
-                  <Widget>[
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
                     _buildHeader(),
-
-                    const SizedBox(
-                      height: 20,
-                    ),
-
+                    const SizedBox(height: 20),
                     if (desktop)
                       Row(
-                        crossAxisAlignment:
-                        CrossAxisAlignment
-                            .start,
-                        children:
-                        <Widget>[
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
                           const Expanded(
                             flex: 4,
-                            child:
-                            _RegisterHero(),
+                            child: _RegisterHero(),
                           ),
-
-                          const SizedBox(
-                            width: 20,
-                          ),
-
+                          const SizedBox(width: 20),
                           Expanded(
                             flex: 6,
-                            child:
-                            _buildForm(),
+                            child: _buildForm(),
                           ),
                         ],
                       )
                     else ...<Widget>[
                       const _RegisterHero(),
-
-                      const SizedBox(
-                        height: 18,
-                      ),
-
+                      const SizedBox(height: 18),
                       _buildForm(),
                     ],
                   ],
@@ -447,32 +337,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget _buildHeader() {
     return Row(
       children: <Widget>[
-        Material(
-          color: Colors.white,
-          borderRadius:
-          BorderRadius.circular(15),
-          child: InkWell(
-            borderRadius:
-            BorderRadius.circular(15),
-            onTap:
-            _loading
-                ? null
-                : _goLogin,
-            child:
-            const SizedBox(
-              width: 45,
-              height: 45,
-              child: Icon(
-                Icons
-                    .arrow_back_ios_new_rounded,
-                size: 18,
-              ),
+        IconButton(
+          onPressed: _loading ? null : _goLogin,
+          icon: const SizedBox(
+            width: 45,
+            height: 45,
+            child: Icon(
+              Icons.arrow_back_ios_new_rounded,
+              size: 18,
             ),
           ),
         ),
-
         const SizedBox(width: 12),
-
         const Text(
           'Farm To Home',
           style: TextStyle(
@@ -869,9 +745,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     'Login',
                     style:
                     TextStyle(
-                      fontWeight:
-                      FontWeight
-                          .w900,
+                      fontWeight: FontWeight.w900,
                     ),
                   ),
                 ),
@@ -881,8 +755,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ),
       ),
     ),
-    ),
-    );
+  ),
+);
   }
 }
 

@@ -1,320 +1,142 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
+import '../../core/network/api_response.dart';
+import '../../core/services/backend_api_service.dart';
+import '../models/order_item_model.dart';
 import '../models/order_model.dart';
 
 class OrderRemoteSource {
-  OrderRemoteSource({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+  OrderRemoteSource({BackendApiService? apiService})
+      : _apiService = apiService ?? BackendApiService();
 
-  final FirebaseFirestore _firestore;
-
-  CollectionReference<Map<String, dynamic>> get _orders {
-    return _firestore.collection('orders');
-  }
+  final BackendApiService _apiService;
+  final List<OrderModel> _orders = <OrderModel>[];
 
   Stream<List<OrderModel>> watchUserOrders(
-      String userId, {
-        int limit = 50,
-      }) {
-    final String normalizedUserId = userId.trim();
+    String userId, {
+    int limit = 50,
+  }) async* {
+    final List<OrderModel> orders = await getUserOrders(userId, limit: limit);
+    yield orders;
+  }
 
-    if (normalizedUserId.isEmpty) {
-      return Stream<List<OrderModel>>.value(<OrderModel>[]);
-    }
-
-    return _orders
-        .where('userId', isEqualTo: normalizedUserId)
-        .snapshots()
-        .map(
-          (QuerySnapshot<Map<String, dynamic>> snapshot) {
-        final List<OrderModel> orders = snapshot.docs
-            .map(OrderModel.fromDocument)
-            .toList(growable: true);
-
-        return _sortAndLimit(orders, limit);
-      },
-    );
+  List<OrderModel> getUserOrdersSync(String userId, {int limit = 50}) {
+    final List<OrderModel> filtered = _orders
+        .where((OrderModel o) => userId.trim().isEmpty || o.userId == userId.trim())
+        .toList();
+    filtered.sort((OrderModel a, OrderModel b) => (b.createdAt ?? DateTime(1970)).compareTo(a.createdAt ?? DateTime(1970)));
+    return filtered.take(limit).toList();
   }
 
   Future<List<OrderModel>> getUserOrders(
-      String userId, {
-        int limit = 50,
-      }) async {
-    final String normalizedUserId = userId.trim();
-
-    if (normalizedUserId.isEmpty) {
-      return <OrderModel>[];
-    }
-
-    final QuerySnapshot<Map<String, dynamic>> snapshot = await _orders
-        .where('userId', isEqualTo: normalizedUserId)
-        .get();
-
-    final List<OrderModel> orders = snapshot.docs
-        .map(OrderModel.fromDocument)
-        .toList(growable: true);
-
-    return _sortAndLimit(orders, limit);
-  }
-
-  Stream<OrderModel?> watchOrder(String orderId) {
-    final String normalizedOrderId = orderId.trim();
-
-    if (normalizedOrderId.isEmpty) {
-      return Stream<OrderModel?>.value(null);
-    }
-
-    return _orders.doc(normalizedOrderId).snapshots().map(
-          (DocumentSnapshot<Map<String, dynamic>> document) {
-        if (!document.exists || document.data() == null) {
-          return null;
+    String userId, {
+    int limit = 50,
+  }) async {
+    try {
+      final ApiResponse<dynamic> response = await _apiService.getUserOrders(size: limit);
+      if (response.isSuccess && response.data != null) {
+        final dynamic raw = response.data;
+        List<dynamic> items = <dynamic>[];
+        if (raw is List) {
+          items = raw;
+        } else if (raw is Map && raw['content'] is List) {
+          items = raw['content'] as List;
         }
 
-        return OrderModel.fromDocument(document);
-      },
-    );
+        if (items.isNotEmpty) {
+          final List<OrderModel> remoteOrders = items
+              .whereType<Map<String, dynamic>>()
+              .map((Map<String, dynamic> map) => OrderModel.fromMap(map))
+              .toList(growable: true);
+
+          for (final OrderModel ro in remoteOrders) {
+            _orders.removeWhere((OrderModel local) => local.id == ro.id);
+            _orders.add(ro);
+          }
+
+          remoteOrders.sort((OrderModel a, OrderModel b) => (b.createdAt ?? DateTime(1970)).compareTo(a.createdAt ?? DateTime(1970)));
+          return remoteOrders.take(limit).toList();
+        }
+      }
+    } catch (_) {}
+
+    return <OrderModel>[];
+  }
+
+  Stream<OrderModel?> watchOrder(String orderId) async* {
+    final OrderModel? order = await getOrder(orderId);
+    yield order;
   }
 
   Future<OrderModel?> getOrder(String orderId) async {
-    final String normalizedOrderId = orderId.trim();
-
-    if (normalizedOrderId.isEmpty) {
-      return null;
-    }
-
-    final DocumentSnapshot<Map<String, dynamic>> document =
-    await _orders.doc(normalizedOrderId).get();
-
-    if (!document.exists || document.data() == null) {
-      return null;
-    }
-
-    return OrderModel.fromDocument(document);
+    try {
+      final ApiResponse<dynamic> response = await _apiService.getOrder(orderId);
+      if (response.isSuccess && response.data is Map<String, dynamic>) {
+        return OrderModel.fromMap(response.data as Map<String, dynamic>);
+      }
+    } catch (_) {}
+    return null;
   }
 
   Future<String> createOrder(OrderModel order) async {
-    final DocumentReference<Map<String, dynamic>> reference =
-    order.id.trim().isEmpty ? _orders.doc() : _orders.doc(order.id.trim());
+    final List<Map<String, dynamic>> orderItemsPayload = order.items
+        .where((OrderItemModel item) => item.productId.trim().isNotEmpty)
+        .map((OrderItemModel item) => <String, dynamic>{
+              'productId': item.productId.trim(),
+              'quantity': item.quantity > 0 ? item.quantity : 1,
+            })
+        .toList();
 
-    final Map<String, dynamic> data = <String, dynamic>{
-      ...order.toMap(),
-      'id': reference.id,
-      'orderId': reference.id,
-      'createdAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
+    String enumPaymentMethod = 'CASH_ON_DELIVERY';
+    final String pm = order.paymentMethod.trim().toLowerCase();
+    if (pm.contains('upi')) {
+      enumPaymentMethod = 'UPI';
+    } else if (pm.contains('card')) {
+      enumPaymentMethod = 'CREDIT_CARD';
+    } else if (pm.contains('net')) {
+      enumPaymentMethod = 'NET_BANKING';
+    } else if (pm.contains('wallet')) {
+      enumPaymentMethod = 'WALLET';
+    }
+
+    final Map<String, dynamic> body = <String, dynamic>{
+      if (order.addressId.trim().isNotEmpty && order.addressId.length > 20)
+        'shippingAddressId': order.addressId.trim(),
+      if (order.couponCode.trim().isNotEmpty)
+        'couponCode': order.couponCode.trim(),
+      'paymentMethod': enumPaymentMethod,
+      'transactionRef': order.transactionId.trim().isNotEmpty ? order.transactionId.trim() : 'TXN_${DateTime.now().millisecondsSinceEpoch}',
+      'items': orderItemsPayload,
     };
 
-    if (order.statusHistory.isEmpty) {
-      data['statusHistory'] = <Map<String, dynamic>>[
-        <String, dynamic>{
-          'status': order.status,
-          'time': Timestamp.now(),
-        },
-      ];
-    }
+    try {
+      final ApiResponse<dynamic> response = await _apiService.createOrder(body);
+      if (response.isSuccess && response.data != null) {
+        final dynamic raw = response.data;
+        if (raw is Map && raw['id'] != null) {
+          return raw['id'].toString();
+        }
+      }
+    } catch (_) {}
 
-    await reference.set(data);
-    return reference.id;
-  }
-
-  Future<void> updateOrder(OrderModel order) async {
-    final String orderId = order.id.trim();
-
-    if (orderId.isEmpty) {
-      throw ArgumentError.value(
-        order.id,
-        'order.id',
-        'Order ID cannot be empty.',
-      );
-    }
-
-    await _orders.doc(orderId).set(
-      <String, dynamic>{
-        ...order.toMap(),
-        'id': orderId,
-        'orderId': orderId,
-        'updatedAt': FieldValue.serverTimestamp(),
-      },
-      SetOptions(merge: true),
-    );
+    return order.id;
   }
 
   Future<void> updateOrderStatus({
     required String orderId,
     required String status,
-    String note = '',
   }) async {
-    final String normalizedOrderId = orderId.trim();
-    final String normalizedStatus = status.trim().toLowerCase();
-
-    if (normalizedOrderId.isEmpty) {
-      throw ArgumentError.value(
-        orderId,
-        'orderId',
-        'Order ID cannot be empty.',
-      );
+    final int index = _orders.indexWhere((OrderModel o) => o.id == orderId.trim());
+    if (index >= 0) {
+      _orders[index] = _orders[index].copyWith(status: status);
     }
-
-    if (normalizedStatus.isEmpty) {
-      throw ArgumentError.value(
-        status,
-        'status',
-        'Order status cannot be empty.',
-      );
-    }
-
-    final DocumentReference<Map<String, dynamic>> reference =
-    _orders.doc(normalizedOrderId);
-
-    await _firestore.runTransaction<void>(
-          (Transaction transaction) async {
-        final DocumentSnapshot<Map<String, dynamic>> snapshot =
-        await transaction.get(reference);
-
-        if (!snapshot.exists) {
-          throw StateError('Order not found.');
-        }
-
-        final Map<String, dynamic> historyEntry = <String, dynamic>{
-          'status': normalizedStatus,
-          'time': Timestamp.now(),
-          if (note.trim().isNotEmpty) 'note': note.trim(),
-        };
-
-        transaction.update(
-          reference,
-          <String, dynamic>{
-            'status': normalizedStatus,
-            'updatedAt': FieldValue.serverTimestamp(),
-            'statusHistory': FieldValue.arrayUnion(
-              <Map<String, dynamic>>[historyEntry],
-            ),
-          },
-        );
-      },
-    );
+    try {
+      await _apiService.updateOrder(orderId, <String, dynamic>{'status': status});
+    } catch (_) {}
   }
 
-  Future<void> cancelOrder({
-    required String orderId,
-    required String userId,
-    String reason = '',
-  }) async {
-    final String normalizedOrderId = orderId.trim();
-    final String normalizedUserId = userId.trim();
-
-    if (normalizedOrderId.isEmpty || normalizedUserId.isEmpty) {
-      throw ArgumentError('Order ID and user ID are required.');
-    }
-
-    final DocumentReference<Map<String, dynamic>> reference =
-    _orders.doc(normalizedOrderId);
-
-    await _firestore.runTransaction<void>(
-          (Transaction transaction) async {
-        final DocumentSnapshot<Map<String, dynamic>> snapshot =
-        await transaction.get(reference);
-
-        if (!snapshot.exists || snapshot.data() == null) {
-          throw StateError('Order not found.');
-        }
-
-        final Map<String, dynamic> data = snapshot.data()!;
-        final String ownerId = _text(data['userId']);
-        final String currentStatus = _text(
-          data['status'],
-          fallback: 'placed',
-        ).toLowerCase();
-
-        if (ownerId != normalizedUserId) {
-          throw StateError('You cannot cancel this order.');
-        }
-
-        const Set<String> cancellableStatuses = <String>{
-          'placed',
-          'confirmed',
-          'processing',
-        };
-
-        if (!cancellableStatuses.contains(currentStatus)) {
-          throw StateError('This order can no longer be cancelled.');
-        }
-
-        final Map<String, dynamic> historyEntry = <String, dynamic>{
-          'status': 'cancelled',
-          'time': Timestamp.now(),
-          if (reason.trim().isNotEmpty) 'reason': reason.trim(),
-        };
-
-        transaction.update(
-          reference,
-          <String, dynamic>{
-            'status': 'cancelled',
-            'cancellationReason': reason.trim(),
-            'cancelledAt': FieldValue.serverTimestamp(),
-            'updatedAt': FieldValue.serverTimestamp(),
-            'statusHistory': FieldValue.arrayUnion(
-              <Map<String, dynamic>>[historyEntry],
-            ),
-          },
-        );
-      },
-    );
+  Future<void> cancelOrder(String orderId, {String? reason}) async {
+    await updateOrderStatus(orderId: orderId, status: 'cancelled');
+    try {
+      await _apiService.cancelOrder(orderId, reason: reason);
+    } catch (_) {}
   }
-
-  Future<void> updatePaymentStatus({
-    required String orderId,
-    required String paymentStatus,
-    String paymentId = '',
-    String transactionId = '',
-  }) async {
-    final String normalizedOrderId = orderId.trim();
-    final String normalizedPaymentStatus =
-    paymentStatus.trim().toLowerCase();
-
-    if (normalizedOrderId.isEmpty || normalizedPaymentStatus.isEmpty) {
-      throw ArgumentError('Order ID and payment status are required.');
-    }
-
-    await _orders.doc(normalizedOrderId).update(
-      <String, dynamic>{
-        'paymentStatus': normalizedPaymentStatus,
-        if (paymentId.trim().isNotEmpty) 'paymentId': paymentId.trim(),
-        if (transactionId.trim().isNotEmpty)
-          'transactionId': transactionId.trim(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      },
-    );
-  }
-
-  List<OrderModel> _sortAndLimit(
-      List<OrderModel> orders,
-      int limit,
-      ) {
-    orders.sort(
-          (OrderModel first, OrderModel second) {
-        final DateTime firstDate =
-            first.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-        final DateTime secondDate =
-            second.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-
-        return secondDate.compareTo(firstDate);
-      },
-    );
-
-    if (limit <= 0 || orders.length <= limit) {
-      return List<OrderModel>.unmodifiable(orders);
-    }
-
-    return List<OrderModel>.unmodifiable(orders.take(limit));
-  }
-}
-
-String _text(dynamic value, {String fallback = ''}) {
-  if (value == null) {
-    return fallback;
-  }
-
-  final String text = value.toString().trim();
-  return text.isEmpty ? fallback : text;
 }

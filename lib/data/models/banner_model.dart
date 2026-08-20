@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class BannerModel {
   const BannerModel({
     required this.id,
@@ -31,9 +29,6 @@ class BannerModel {
         (endsAt == null || !now.isAfter(endsAt!));
   }
 
-  factory BannerModel.fromDocument(DocumentSnapshot<Map<String, dynamic>> doc) =>
-      BannerModel.fromMap(doc.data() ?? <String, dynamic>{}, documentId: doc.id);
-
   factory BannerModel.fromMap(Map<String, dynamic> map, {String documentId = ''}) => BannerModel(
         id: _text(documentId.isNotEmpty ? documentId : map['id']),
         title: _text(map['title'], fallback: 'Farm Fresh Everyday'),
@@ -48,16 +43,31 @@ class BannerModel {
       );
 
   Map<String, dynamic> toMap() => <String, dynamic>{
-        'id': id, 'title': title, 'subtitle': subtitle, 'imageUrl': imageUrl,
-        'actionLabel': actionLabel, 'route': route, 'priority': priority,
+        'id': id,
+        'title': title,
+        'subtitle': subtitle,
+        'imageUrl': imageUrl,
+        'actionLabel': actionLabel,
+        'route': route,
+        'priority': priority,
         'isActive': isActive,
-        if (startsAt != null) 'startsAt': Timestamp.fromDate(startsAt!),
-        if (endsAt != null) 'endsAt': Timestamp.fromDate(endsAt!),
+        if (startsAt != null) 'startsAt': startsAt!.toIso8601String(),
+        if (endsAt != null) 'endsAt': endsAt!.toIso8601String(),
       };
 
-  BannerModel copyWith({String? id, String? title, String? subtitle,
-      String? imageUrl, String? actionLabel, String? route, int? priority,
-      bool? isActive, DateTime? startsAt, DateTime? endsAt}) => BannerModel(
+  BannerModel copyWith({
+    String? id,
+    String? title,
+    String? subtitle,
+    String? imageUrl,
+    String? actionLabel,
+    String? route,
+    int? priority,
+    bool? isActive,
+    DateTime? startsAt,
+    DateTime? endsAt,
+  }) =>
+      BannerModel(
         id: id ?? this.id,
         title: title ?? this.title,
         subtitle: subtitle ?? this.subtitle,
@@ -75,8 +85,14 @@ String _text(dynamic value, {String fallback = ''}) {
   final String result = value?.toString().trim() ?? '';
   return result.isEmpty ? fallback : result;
 }
+
 int _integer(dynamic value) => value is num ? value.toInt() : int.tryParse('$value') ?? 0;
-bool _boolean(dynamic value, {bool fallback = false}) => value is bool ? value :
-    value == null ? fallback : <String>{'true', '1', 'yes'}.contains('$value'.toLowerCase());
-DateTime? _date(dynamic value) => value is Timestamp ? value.toDate() :
+
+bool _boolean(dynamic value, {bool fallback = false}) => value is bool
+    ? value
+    : value == null
+        ? fallback
+        : <String>{'true', '1', 'yes'}.contains('$value'.toLowerCase());
+
+DateTime? _date(dynamic value) =>
     value is DateTime ? value : DateTime.tryParse(value?.toString() ?? '');

@@ -1,61 +1,38 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
+import '../../core/network/api_response.dart';
+import '../../core/services/backend_api_service.dart';
 import '../models/offer_model.dart';
 
 class OfferRepository {
-  OfferRepository({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+  OfferRepository({BackendApiService? apiService})
+      : _apiService = apiService ?? BackendApiService();
 
-  final FirebaseFirestore _firestore;
-
-  List<OfferModel> get localOffers => const <OfferModel>[
-        OfferModel(
-          id: 'fresh10',
-          title: 'Fresh 10% Off',
-          description: 'Save on your first farm-fresh basket',
-          code: 'FRESH10',
-          discountValue: 10,
-          minimumOrder: 299,
-          maximumDiscount: 100,
-        ),
-        OfferModel(
-          id: 'farm50',
-          title: '₹50 Farm Savings',
-          description: 'Flat savings on orders above ₹499',
-          code: 'FARM50',
-          discountType: 'fixed',
-          discountValue: 50,
-          minimumOrder: 499,
-        ),
-      ];
+  final BackendApiService _apiService;
 
   Stream<List<OfferModel>> watchOffers() async* {
-    yield localOffers;
-    try {
-      await for (final QuerySnapshot<Map<String, dynamic>> snapshot
-          in _firestore.collection('offers').snapshots()) {
-        final List<OfferModel> values = snapshot.docs
-            .map(OfferModel.fromDocument)
-            .where((OfferModel offer) => offer.isAvailable)
-            .toList(growable: false);
-        if (values.isNotEmpty) yield List<OfferModel>.unmodifiable(values);
-      }
-    } catch (_) {
-      yield localOffers;
-    }
+    final List<OfferModel> offers = await getOffers();
+    yield offers;
   }
 
   Future<List<OfferModel>> getOffers() async {
     try {
-      final QuerySnapshot<Map<String, dynamic>> snapshot =
-          await _firestore.collection('offers').get();
-      final List<OfferModel> values = snapshot.docs
-          .map(OfferModel.fromDocument)
-          .where((OfferModel offer) => offer.isAvailable)
-          .toList(growable: false);
-      return values.isEmpty ? localOffers : List<OfferModel>.unmodifiable(values);
-    } catch (_) {
-      return localOffers;
-    }
+      final ApiResponse<dynamic> response = await _apiService.getCoupons();
+      if (response.isSuccess && response.data != null) {
+        final dynamic raw = response.data;
+        List<dynamic> items = <dynamic>[];
+        if (raw is List) {
+          items = raw;
+        } else if (raw is Map && raw['content'] is List) {
+          items = raw['content'] as List;
+        }
+        if (items.isNotEmpty) {
+          return items
+              .whereType<Map<String, dynamic>>()
+              .map((Map<String, dynamic> map) => OfferModel.fromMap(map))
+              .toList(growable: false);
+        }
+      }
+    } catch (_) {}
+
+    return <OfferModel>[];
   }
 }

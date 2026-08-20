@@ -1,91 +1,77 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import '../remote/auth_remote_source.dart';
+import '../../core/network/api_response.dart';
+import 'session_repository.dart';
 
 class AuthRepository {
-  AuthRepository({FirebaseAuth? auth, FirebaseFirestore? firestore})
-      : _auth = auth ?? FirebaseAuth.instance,
-        _firestore = firestore ?? FirebaseFirestore.instance;
+  AuthRepository({AuthRemoteSource? remoteSource})
+      : _remoteSource = remoteSource ?? AuthRemoteSource();
 
-  final FirebaseAuth _auth;
-  final FirebaseFirestore _firestore;
+  final AuthRemoteSource _remoteSource;
 
-  User? get currentUser => _auth.currentUser;
-  bool get isSignedIn => currentUser != null;
-  Stream<User?> watchAuthState() => _auth.authStateChanges();
-
-  Future<UserCredential> signInWithEmail({
+  Future<ApiResponse<dynamic>> signInWithEmail({
     required String email,
     required String password,
   }) async {
-    final UserCredential result = await _auth.signInWithEmailAndPassword(
-      email: email.trim().toLowerCase(),
+    final ApiResponse<dynamic> response = await _remoteSource.signInWithEmail(
+      email: email,
       password: password,
     );
-    await _recordLogin(result.user);
-    return result;
+
+    if (response.isSuccess && response.data != null) {
+      final Map<String, dynamic> data =
+          response.data is Map ? Map<String, dynamic>.from(response.data as Map) : <String, dynamic>{};
+      final String userEmail = data['email']?.toString() ?? email;
+      final String token = data['token']?.toString() ?? data['accessToken']?.toString() ?? '';
+      SessionRepository.setSession(
+        userId: userEmail,
+        email: userEmail,
+        token: token,
+      );
+    }
+    return response;
   }
 
-  Future<UserCredential> registerWithEmail({
+  Future<ApiResponse<dynamic>> registerWithEmail({
     required String email,
     required String password,
     required String firstName,
     String lastName = '',
     String phoneNumber = '',
   }) async {
-    final UserCredential result = await _auth.createUserWithEmailAndPassword(
-      email: email.trim().toLowerCase(),
+    return _remoteSource.registerWithEmail(
+      email: email,
       password: password,
+      firstName: firstName,
+      lastName: lastName,
+      phone: phoneNumber,
     );
-    final User? user = result.user;
-    if (user != null) {
-      final String displayName = '$firstName $lastName'.trim();
-      if (displayName.isNotEmpty) await user.updateDisplayName(displayName);
-      await _firestore.collection('users').doc(user.uid).set(
-        <String, dynamic>{
-          'uid': user.uid,
-          'firstName': firstName.trim(),
-          'lastName': lastName.trim(),
-          'email': user.email ?? email.trim().toLowerCase(),
-          'phoneNumber': phoneNumber.trim(),
-          'shoppingMode': 'home',
-          'isActive': true,
-          'isProfileComplete': firstName.trim().isNotEmpty,
-          'createdAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
-          'lastLoginAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
+  }
+
+  Future<ApiResponse<dynamic>> verifyEmailOtp({
+    required String email,
+    required String otpCode,
+  }) async {
+    final ApiResponse<dynamic> response = await _remoteSource.verifyEmailOtp(
+      email: email,
+      otpCode: otpCode,
+    );
+    if (response.isSuccess) {
+      final Map<String, dynamic> data =
+          response.data is Map ? Map<String, dynamic>.from(response.data as Map) : <String, dynamic>{};
+      final String token = data['token']?.toString() ?? data['accessToken']?.toString() ?? '';
+      SessionRepository.setSession(
+        userId: email,
+        email: email,
+        token: token,
       );
     }
-    return result;
+    return response;
   }
 
-  Future<UserCredential> signInWithCredential(AuthCredential credential) async {
-    final UserCredential result = await _auth.signInWithCredential(credential);
-    await _recordLogin(result.user);
-    return result;
-  }
+  Future<ApiResponse<dynamic>> sendPasswordReset(String email) =>
+      _remoteSource.sendPasswordReset(email);
 
-  Future<void> sendPasswordReset(String email) =>
-      _auth.sendPasswordResetEmail(email: email.trim().toLowerCase());
-
-  Future<void> reloadUser() => currentUser?.reload() ?? Future<void>.value();
-
-  Future<void> signOut() => _auth.signOut();
-
-  Future<void> _recordLogin(User? user) async {
-    if (user == null) return;
-    await _firestore.collection('users').doc(user.uid).set(
-      <String, dynamic>{
-        'uid': user.uid,
-        'email': user.email ?? '',
-        'phoneNumber': user.phoneNumber ?? '',
-        'photoUrl': user.photoURL ?? '',
-        'isActive': true,
-        'lastLoginAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      },
-      SetOptions(merge: true),
-    );
+  Future<void> signOut() async {
+    await SessionRepository().endSession();
   }
 }

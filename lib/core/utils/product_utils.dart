@@ -1,3 +1,5 @@
+import '../constants/asset_paths.dart';
+
 /// Product-name localization used across the complete shopping flow.
 ///
 /// The English name remains first so search and existing Firestore data keep
@@ -135,6 +137,29 @@ class ProductUtils {
     }
     final String telugu = teluguName(cleanName);
     return telugu.isEmpty ? cleanName : '$cleanName ($telugu)';
+  }
+
+  static String assetPathFor(String productName, String category) {
+    final String key = _normalize(productName);
+    final String categoryKey = _normalize(category);
+    final Map<String, String>? categoryImages = switch (categoryKey) {
+      'vegetable' || 'vegetables' || 'leafy_greens' => AssetPaths.vegetableImages,
+      'fruit' || 'fruits' => AssetPaths.fruitImages,
+      'dairy' => AssetPaths.dairyImages,
+      _ => null,
+    };
+
+    final String? categoryPath = categoryImages?[key];
+    if (categoryPath != null) return categoryPath;
+    for (final Map<String, String> images in <Map<String, String>>[
+      AssetPaths.vegetableImages,
+      AssetPaths.fruitImages,
+      AssetPaths.dairyImages,
+    ]) {
+      final String? path = images[key];
+      if (path != null) return path;
+    }
+    return '';
   }
 
   static String _normalize(String value) {

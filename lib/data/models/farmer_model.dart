@@ -1,38 +1,43 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class FarmerModel {
-  const FarmerModel({
+  FarmerModel({
     required this.id,
     required this.name,
     required this.farmName,
-    required this.location,
-    required this.imageUrl,
-    required this.rating,
-    required this.reviewCount,
-    required this.isVerified,
-    required this.experienceYears,
-    required this.speciality,
-  });
+    String? location,
+    String? village,
+    this.district = '',
+    this.state = '',
+    this.imageUrl = '',
+    this.rating = 4.8,
+    this.reviewCount = 0,
+    bool? isVerified,
+    bool? verified,
+    this.experienceYears = 5,
+    String? speciality,
+    String? farmingMethod,
+    this.bio = '',
+  })  : location = location ?? (village != null && village.isNotEmpty ? '$village, $district' : village ?? district),
+        village = village ?? location ?? '',
+        isVerified = isVerified ?? verified ?? true,
+        speciality = speciality ?? farmingMethod ?? 'Organic Farming';
 
   final String id;
   final String name;
   final String farmName;
   final String location;
+  final String village;
+  final String district;
+  final String state;
   final String imageUrl;
   final double rating;
   final int reviewCount;
   final bool isVerified;
   final int experienceYears;
   final String speciality;
+  final String bio;
 
-  factory FarmerModel.fromDocument(
-      DocumentSnapshot<Map<String, dynamic>> document,
-      ) {
-    return FarmerModel.fromMap(
-      document.data() ?? <String, dynamic>{},
-      documentId: document.id,
-    );
-  }
+  bool get verified => isVerified;
+  String get farmingMethod => speciality;
 
   factory FarmerModel.fromMap(
       Map<String, dynamic> map, {
@@ -42,13 +47,17 @@ class FarmerModel {
       id: _text(documentId.isNotEmpty ? documentId : map['id']),
       name: _text(map['name'] ?? map['farmerName'], fallback: 'Local Farmer'),
       farmName: _text(map['farmName'], fallback: 'Farm To Home Partner'),
-      location: _text(map['location'] ?? map['village']),
+      location: _text(map['location']),
+      village: _text(map['village']),
+      district: _text(map['district']),
+      state: _text(map['state']),
       imageUrl: _text(map['imageUrl'] ?? map['profileImage']),
-      rating: _toDouble(map['rating']),
+      rating: _toDouble(map['rating'], fallback: 4.8),
       reviewCount: _toInt(map['reviewCount'] ?? map['reviews']),
-      isVerified: _toBool(map['isVerified'], fallback: true),
-      experienceYears: _toInt(map['experienceYears'] ?? map['experience']),
-      speciality: _text(map['speciality'] ?? map['specialty']),
+      isVerified: _toBool(map['isVerified'] ?? map['verified'], fallback: true),
+      experienceYears: _toInt(map['experienceYears'] ?? map['experience'], fallback: 5),
+      speciality: _text(map['speciality'] ?? map['specialty'] ?? map['farmingMethod'], fallback: 'Organic Farming'),
+      bio: _text(map['bio']),
     );
   }
 
@@ -57,13 +66,53 @@ class FarmerModel {
     'name': name,
     'farmName': farmName,
     'location': location,
+    'village': village,
+    'district': district,
+    'state': state,
     'imageUrl': imageUrl,
     'rating': rating,
     'reviewCount': reviewCount,
     'isVerified': isVerified,
+    'verified': isVerified,
     'experienceYears': experienceYears,
     'speciality': speciality,
+    'farmingMethod': speciality,
+    'bio': bio,
   };
+
+  FarmerModel copyWith({
+    String? id,
+    String? name,
+    String? farmName,
+    String? location,
+    String? village,
+    String? district,
+    String? state,
+    String? imageUrl,
+    double? rating,
+    int? reviewCount,
+    bool? isVerified,
+    int? experienceYears,
+    String? speciality,
+    String? bio,
+  }) {
+    return FarmerModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      farmName: farmName ?? this.farmName,
+      location: location ?? this.location,
+      village: village ?? this.village,
+      district: district ?? this.district,
+      state: state ?? this.state,
+      imageUrl: imageUrl ?? this.imageUrl,
+      rating: rating ?? this.rating,
+      reviewCount: reviewCount ?? this.reviewCount,
+      isVerified: isVerified ?? this.isVerified,
+      experienceYears: experienceYears ?? this.experienceYears,
+      speciality: speciality ?? this.speciality,
+      bio: bio ?? this.bio,
+    );
+  }
 }
 
 String _text(dynamic value, {String fallback = ''}) {
@@ -71,14 +120,14 @@ String _text(dynamic value, {String fallback = ''}) {
   return text.isEmpty ? fallback : text;
 }
 
-double _toDouble(dynamic value) {
+double _toDouble(dynamic value, {double fallback = 0}) {
   if (value is num) return value.toDouble();
-  return double.tryParse(value?.toString() ?? '') ?? 0;
+  return double.tryParse(value?.toString() ?? '') ?? fallback;
 }
 
-int _toInt(dynamic value) {
+int _toInt(dynamic value, {int fallback = 0}) {
   if (value is num) return value.toInt();
-  return int.tryParse(value?.toString() ?? '') ?? 0;
+  return int.tryParse(value?.toString() ?? '') ?? fallback;
 }
 
 bool _toBool(dynamic value, {bool fallback = false}) {

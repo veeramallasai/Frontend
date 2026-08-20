@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class AddressModel {
   const AddressModel({
     required this.id,
@@ -46,15 +44,6 @@ class AddressModel {
     postalCode,
   ].where((String value) => value.trim().isNotEmpty).join(', ');
 
-  factory AddressModel.fromDocument(
-      DocumentSnapshot<Map<String, dynamic>> document,
-      ) {
-    return AddressModel.fromMap(
-      document.data() ?? <String, dynamic>{},
-      documentId: document.id,
-    );
-  }
-
   factory AddressModel.fromMap(
       Map<String, dynamic> map, {
         String documentId = '',
@@ -94,8 +83,8 @@ class AddressModel {
     'isDefault': isDefault,
     'latitude': latitude,
     'longitude': longitude,
-    if (createdAt != null) 'createdAt': Timestamp.fromDate(createdAt!),
-    if (updatedAt != null) 'updatedAt': Timestamp.fromDate(updatedAt!),
+    if (createdAt != null) 'createdAt': createdAt!.toIso8601String(),
+    if (updatedAt != null) 'updatedAt': updatedAt!.toIso8601String(),
   };
 
   AddressModel copyWith({
@@ -146,7 +135,6 @@ double _toDouble(dynamic value) =>
 bool _toBool(dynamic value) =>
     value == true || value == 1 || value?.toString().toLowerCase() == 'true';
 DateTime? _toDateTime(dynamic value) {
-  if (value is Timestamp) return value.toDate();
   if (value is DateTime) return value;
   return DateTime.tryParse(value?.toString() ?? '');
 }

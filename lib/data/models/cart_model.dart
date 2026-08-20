@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 import 'cart_item_model.dart';
 
 class CartModel {
@@ -21,18 +19,20 @@ class CartModel {
 
   int get itemCount => items.fold<int>(
     0,
-        (int total, CartItemModel item) => total + item.quantity,
+    (int total, CartItemModel item) => total + item.quantity,
   );
   double get subtotal => items.fold<double>(
     0,
-        (double total, CartItemModel item) => total + item.subtotal,
+    (double total, CartItemModel item) => total + item.subtotal,
   );
   double get productSavings => items.fold<double>(
     0,
-        (double total, CartItemModel item) => total + item.savings,
+    (double total, CartItemModel item) => total + item.savings,
   );
   double get total =>
       (subtotal - couponDiscount).clamp(0, double.infinity).toDouble();
+  double get discount => couponDiscount;
+  double get totalAmount => total;
   bool get isEmpty => items.isEmpty;
 
   factory CartModel.empty(String userId, {String shoppingMode = 'home'}) {
@@ -40,15 +40,6 @@ class CartModel {
       userId: userId,
       shoppingMode: shoppingMode == 'shop' ? 'shop' : 'home',
       items: <CartItemModel>[],
-    );
-  }
-
-  factory CartModel.fromDocument(
-      DocumentSnapshot<Map<String, dynamic>> document,
-      ) {
-    return CartModel.fromMap(
-      document.data() ?? <String, dynamic>{},
-      documentId: document.id,
     );
   }
 
@@ -88,7 +79,7 @@ class CartModel {
     'items': items.map((CartItemModel item) => item.toMap()).toList(),
     'couponCode': couponCode,
     'couponDiscount': couponDiscount,
-    if (updatedAt != null) 'updatedAt': Timestamp.fromDate(updatedAt!),
+    if (updatedAt != null) 'updatedAt': updatedAt!.toIso8601String(),
   };
 
   CartModel copyWith({
@@ -97,6 +88,7 @@ class CartModel {
     List<CartItemModel>? items,
     String? couponCode,
     double? couponDiscount,
+    double? discount,
     DateTime? updatedAt,
   }) {
     return CartModel(
@@ -104,7 +96,7 @@ class CartModel {
       shoppingMode: shoppingMode ?? this.shoppingMode,
       items: items ?? this.items,
       couponCode: couponCode ?? this.couponCode,
-      couponDiscount: couponDiscount ?? this.couponDiscount,
+      couponDiscount: discount ?? couponDiscount ?? this.couponDiscount,
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
@@ -121,7 +113,6 @@ double _toDouble(dynamic value) {
 }
 
 DateTime? _toDateTime(dynamic value) {
-  if (value is Timestamp) return value.toDate();
   if (value is DateTime) return value;
   return DateTime.tryParse(value?.toString() ?? '');
 }

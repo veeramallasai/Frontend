@@ -1,9 +1,18 @@
 class ApiEndpoints {
   ApiEndpoints._();
 
-  static const String apiVersion = 'v1';
+  static const String apiVersion = 'api/v1';
   static const String health = '/health';
   static const String auth = '/$apiVersion/auth';
+  static const String login = '$auth/login';
+  static const String register = '$auth/register';
+  static const String sendEmailOtp = '$auth/send-email-otp';
+  static const String verifyEmailOtp = '$auth/verify-email-otp';
+  static const String resendOtp = '$auth/resend-otp';
+  static const String forgotPassword = '$auth/forgot-password';
+  static const String resetPassword = '$auth/reset-password';
+  static const String profile = '$auth/profile';
+
   static const String users = '/$apiVersion/users';
   static const String products = '/$apiVersion/products';
   static const String categories = '/$apiVersion/categories';

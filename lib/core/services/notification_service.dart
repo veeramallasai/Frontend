@@ -1,52 +1,29 @@
-import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 class NotificationService {
-  NotificationService({FirebaseMessaging? messaging})
-      : _messaging = messaging ?? FirebaseMessaging.instance;
+  NotificationService({FlutterLocalNotificationsPlugin? localNotifications})
+      : _local = localNotifications ?? FlutterLocalNotificationsPlugin();
 
-  final FirebaseMessaging _messaging;
+  final FlutterLocalNotificationsPlugin _local;
 
-  Stream<RemoteMessage> get foregroundMessages =>
-      FirebaseMessaging.onMessage;
+  Future<void> initialize() async {
+    const AndroidInitializationSettings android =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+    const InitializationSettings settings =
+        InitializationSettings(android: android);
+    await _local.initialize(settings);
+  }
 
-  Stream<RemoteMessage> get openedMessages =>
-      FirebaseMessaging.onMessageOpenedApp;
-
-  Stream<String> get tokenRefreshes => _messaging.onTokenRefresh;
-
-  Future<NotificationSettings> requestPermission({
-    bool sound = true,
-    bool badge = true,
-    bool alert = true,
-  }) => _messaging.requestPermission(
-        alert: alert,
-        badge: badge,
-        sound: sound,
-        provisional: false,
-      );
-
-  Future<String?> getToken({String? vapidKey}) =>
-      _messaging.getToken(vapidKey: vapidKey);
-
-  Future<RemoteMessage?> getInitialMessage() =>
-      _messaging.getInitialMessage();
-
-  Future<void> subscribeToTopic(String topic) =>
-      _messaging.subscribeToTopic(_cleanTopic(topic));
-
-  Future<void> unsubscribeFromTopic(String topic) =>
-      _messaging.unsubscribeFromTopic(_cleanTopic(topic));
-
-  Future<void> deleteToken() => _messaging.deleteToken();
-
-  String _cleanTopic(String value) {
-    final String topic = value
-        .trim()
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^a-z0-9-_.~%]+'), '-');
-    if (topic.isEmpty) {
-      throw ArgumentError.value(value, 'topic', 'Topic cannot be empty.');
-    }
-    return topic;
+  Future<void> showNotification({
+    required int id,
+    required String title,
+    required String body,
+  }) async {
+    const AndroidNotificationDetails androidDetails =
+        AndroidNotificationDetails('farm_channel', 'Farm Notifications',
+            importance: Importance.max, priority: Priority.high);
+    const NotificationDetails details =
+        NotificationDetails(android: androidDetails);
+    await _local.show(id, title, body, details);
   }
 }

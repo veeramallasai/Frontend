@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../app/app_routes.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/premium_toast.dart';
-import '../../data/local/local_product_catalog.dart';
 import '../../data/models/farmer_model.dart';
 import '../../data/models/product_model.dart';
 import '../../data/repositories/cart_repository.dart';
@@ -84,9 +83,6 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
 
     try {
       ProductModel? product = await _productRepository.getProduct(id);
-      if (widget.initialShoppingMode.trim().toLowerCase() == 'shop') {
-        product = LocalProductCatalog.find(id, shoppingMode: 'shop') ?? product;
-      }
       if (product == null) {
         throw StateError('Product not found.');
       }

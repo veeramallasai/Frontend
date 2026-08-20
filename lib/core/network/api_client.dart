@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import '../../data/repositories/session_repository.dart';
 import '../config/backend_config.dart';
 import '../errors/error_handler.dart';
 import '../errors/network_exception.dart';
@@ -18,7 +19,7 @@ class ApiClient {
     Duration? timeout,
   })  : _client = client ?? http.Client(),
         _networkInfo = networkInfo,
-        _interceptor = interceptor ?? const RequestInterceptor(),
+        _interceptor = interceptor ?? RequestInterceptor(accessTokenProvider: () async => SessionRepository.currentToken),
         _timeout = timeout ?? BackendConfig.receiveTimeout;
 
   final http.Client _client;
@@ -50,12 +51,47 @@ class ApiClient {
         headers: headers,
       );
 
-  Future<ApiResponse<dynamic>> put(String path, {Object? body}) =>
-      _request('PUT', path, body: body);
-  Future<ApiResponse<dynamic>> patch(String path, {Object? body}) =>
-      _request('PATCH', path, body: body);
-  Future<ApiResponse<dynamic>> delete(String path, {Object? body}) =>
-      _request('DELETE', path, body: body);
+  Future<ApiResponse<dynamic>> put(
+    String path, {
+    Object? body,
+    Map<String, dynamic>? queryParameters,
+    Map<String, String>? headers,
+  }) =>
+      _request(
+        'PUT',
+        path,
+        body: body,
+        queryParameters: queryParameters,
+        headers: headers,
+      );
+
+  Future<ApiResponse<dynamic>> patch(
+    String path, {
+    Object? body,
+    Map<String, dynamic>? queryParameters,
+    Map<String, String>? headers,
+  }) =>
+      _request(
+        'PATCH',
+        path,
+        body: body,
+        queryParameters: queryParameters,
+        headers: headers,
+      );
+
+  Future<ApiResponse<dynamic>> delete(
+    String path, {
+    Object? body,
+    Map<String, dynamic>? queryParameters,
+    Map<String, String>? headers,
+  }) =>
+      _request(
+        'DELETE',
+        path,
+        body: body,
+        queryParameters: queryParameters,
+        headers: headers,
+      );
 
   Future<ApiResponse<dynamic>> _request(
     String method,

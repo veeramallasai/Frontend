@@ -1,16 +1,17 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../app/app_routes.dart';
 import '../../core/theme/app_colors.dart';
+import '../../data/repositories/session_repository.dart';
 
 class PrivacyScreen extends StatelessWidget {
   const PrivacyScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final User? user = FirebaseAuth.instance.currentUser;
-    final bool emailVerified = user?.emailVerified == true;
+    final session = SessionRepository().currentSession;
+    final bool isAuthenticated = session.isAuthenticated;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(title: const Text('Privacy & Security')),
@@ -39,10 +40,10 @@ class PrivacyScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        emailVerified
-                            ? 'Verified email • Firebase secured'
-                            : 'Firebase secured authentication',
-                        style: const TextStyle(color: Color(0xFFC9E7D6), fontSize: 9.5),
+                        isAuthenticated
+                            ? 'Verified email • Encrypted backend'
+                            : 'REST API secured authentication',
+                        style: const TextStyle(color: Color(0xFFC9E7D6), fontSize: 11),
                       ),
                     ],
                   ),
@@ -54,7 +55,7 @@ class PrivacyScreen extends StatelessWidget {
           const _PrivacyCard(
             icon: Icons.lock_rounded,
             title: 'Secure authentication',
-            text: 'Your password and sign-in credentials are handled securely through Firebase Authentication.',
+            text: 'Your credentials and JWT access tokens are handled securely through Spring Boot REST APIs.',
           ),
           const _PrivacyCard(
             icon: Icons.location_on_rounded,
@@ -102,26 +103,15 @@ class _PrivacyCard extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: const Color(0xFFEAF7EF),
-                borderRadius: BorderRadius.circular(13),
-              ),
-              child: Icon(icon, color: AppColors.primary),
-            ),
-            const SizedBox(width: 12),
+            Icon(icon, color: AppColors.primary, size: 24),
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text(title, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w900)),
+                  Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
                   const SizedBox(height: 4),
-                  Text(
-                    text,
-                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 9.5, height: 1.5),
-                  ),
+                  Text(text, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12.5)),
                 ],
               ),
             ),

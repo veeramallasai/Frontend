@@ -1,100 +1,69 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 import '../models/payment_model.dart';
+import '../../core/network/api_response.dart';
+import '../../core/services/backend_api_service.dart';
 
 class PaymentRemoteSource {
-  PaymentRemoteSource({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+  PaymentRemoteSource({BackendApiService? apiService})
+      : _apiService = apiService ?? BackendApiService();
 
-  final FirebaseFirestore _firestore;
+  final BackendApiService _apiService;
 
-  CollectionReference<Map<String, dynamic>> get _payments =>
-      _firestore.collection('payments');
+  final List<PaymentModel> _payments = <PaymentModel>[];
 
   Stream<List<PaymentModel>> watchUserPayments(
-      String userId, {
-        int limit = 50,
-      }) {
-    final String normalizedUserId = userId.trim();
-    if (normalizedUserId.isEmpty) {
-      return Stream<List<PaymentModel>>.value(<PaymentModel>[]);
-    }
+    String userId, {
+    int limit = 50,
+  }) async* {
+    yield getUserPaymentsSync(userId, limit: limit);
+  }
 
-    return _payments
-        .where('userId', isEqualTo: normalizedUserId)
-        .snapshots()
-        .map((QuerySnapshot<Map<String, dynamic>> snapshot) {
-      final List<PaymentModel> payments = snapshot.docs
-          .map(PaymentModel.fromDocument)
-          .toList(growable: true);
-      return _sortAndLimit(payments, limit);
-    });
+  List<PaymentModel> getUserPaymentsSync(String userId, {int limit = 50}) {
+    final List<PaymentModel> list = _payments.where((PaymentModel p) => p.userId == userId.trim()).toList();
+    list.sort((PaymentModel a, PaymentModel b) => (b.createdAt ?? DateTime(1970)).compareTo(a.createdAt ?? DateTime(1970)));
+    return list.take(limit).toList();
   }
 
   Future<List<PaymentModel>> getUserPayments(
-      String userId, {
-        int limit = 50,
-      }) async {
-    final String normalizedUserId = userId.trim();
-    if (normalizedUserId.isEmpty) return <PaymentModel>[];
-
-    final QuerySnapshot<Map<String, dynamic>> snapshot = await _payments
-        .where('userId', isEqualTo: normalizedUserId)
-        .get();
-    final List<PaymentModel> payments = snapshot.docs
-        .map(PaymentModel.fromDocument)
-        .toList(growable: true);
-    return _sortAndLimit(payments, limit);
+    String userId, {
+    int limit = 50,
+  }) async {
+    return getUserPaymentsSync(userId, limit: limit);
   }
 
-  Stream<PaymentModel?> watchPayment(String paymentId) {
-    final String id = paymentId.trim();
-    if (id.isEmpty) return Stream<PaymentModel?>.value(null);
+  Stream<PaymentModel?> watchPayment(String paymentId) async* {
+    yield getPaymentSync(paymentId);
+  }
 
-    return _payments.doc(id).snapshots().map(
-          (DocumentSnapshot<Map<String, dynamic>> document) {
-        if (!document.exists || document.data() == null) return null;
-        return PaymentModel.fromDocument(document);
-      },
-    );
+  PaymentModel? getPaymentSync(String paymentId) {
+    try {
+      return _payments.firstWhere((PaymentModel p) => p.id == paymentId.trim());
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<PaymentModel?> getPayment(String paymentId) async {
-    final String id = paymentId.trim();
-    if (id.isEmpty) return null;
-
-    final DocumentSnapshot<Map<String, dynamic>> document =
-    await _payments.doc(id).get();
-    if (!document.exists || document.data() == null) return null;
-    return PaymentModel.fromDocument(document);
+    return getPaymentSync(paymentId);
   }
 
   Future<PaymentModel?> getPaymentForOrder(String orderId) async {
-    final String id = orderId.trim();
-    if (id.isEmpty) return null;
-
-    final QuerySnapshot<Map<String, dynamic>> snapshot = await _payments
-        .where('orderId', isEqualTo: id)
-        .limit(1)
-        .get();
-    if (snapshot.docs.isEmpty) return null;
-    return PaymentModel.fromDocument(snapshot.docs.first);
+    try {
+      return _payments.firstWhere((PaymentModel p) => p.orderId == orderId.trim());
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<String> createPayment(PaymentModel payment) async {
-    final DocumentReference<Map<String, dynamic>> reference =
-    payment.id.trim().isEmpty
-        ? _payments.doc()
-        : _payments.doc(payment.id.trim());
-
-    await reference.set(<String, dynamic>{
-      ...payment.toMap(),
-      'id': reference.id,
-      'paymentId': reference.id,
-      'createdAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
-    return reference.id;
+    final ApiResponse<dynamic> response = await _apiService.createPayment(payment.toMap());
+    if (!response.isSuccess || response.data is! Map) {
+      throw StateError(response.message.isNotEmpty ? response.message : 'Unable to save payment.');
+    }
+    final Map<String, dynamic> data = Map<String, dynamic>.from(response.data as Map);
+    final String id = (data['id'] ?? payment.id).toString();
+    _payments.removeWhere((PaymentModel p) => p.id == id);
+    _payments.add(payment.copyWith(id: id));
+    return id;
   }
 
   Future<void> updatePaymentStatus({
@@ -102,35 +71,12 @@ class PaymentRemoteSource {
     required String status,
     String transactionId = '',
   }) async {
-    final String id = paymentId.trim();
-    final String normalizedStatus = status.trim().toLowerCase();
-    if (id.isEmpty || normalizedStatus.isEmpty) {
-      throw ArgumentError('Payment ID and status are required.');
+    final int index = _payments.indexWhere((PaymentModel p) => p.id == paymentId.trim());
+    if (index >= 0) {
+      _payments[index] = _payments[index].copyWith(
+        status: status,
+        transactionId: transactionId.isNotEmpty ? transactionId : _payments[index].transactionId,
+      );
     }
-
-    await _payments.doc(id).update(<String, dynamic>{
-      'status': normalizedStatus,
-      if (transactionId.trim().isNotEmpty)
-        'transactionId': transactionId.trim(),
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
-  }
-
-  List<PaymentModel> _sortAndLimit(
-      List<PaymentModel> payments,
-      int limit,
-      ) {
-    payments.sort((PaymentModel first, PaymentModel second) {
-      final DateTime firstDate =
-          first.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-      final DateTime secondDate =
-          second.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-      return secondDate.compareTo(firstDate);
-    });
-
-    if (limit <= 0 || payments.length <= limit) {
-      return List<PaymentModel>.unmodifiable(payments);
-    }
-    return List<PaymentModel>.unmodifiable(payments.take(limit));
   }
 }

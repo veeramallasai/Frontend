@@ -15,6 +15,8 @@ class LocalProductCatalog {
     ],
   );
 
+  static List<ProductModel> get allProducts => all;
+
   static const Set<String> _seasonalIds = <String>{
     'vegetables_corn',
     'vegetables_green_peas',
@@ -39,10 +41,17 @@ class LocalProductCatalog {
       values = values.where(
         (ProductModel product) => _seasonalIds.contains(product.id),
       );
-    } else if (normalizedCategory.isNotEmpty) {
+    } else if (normalizedCategory.isNotEmpty && normalizedCategory != 'all') {
       values = values.where(
-        (ProductModel product) =>
-            _normalize(product.category) == normalizedCategory,
+        (ProductModel product) {
+          final String p = _normalize(product.category);
+          final String f = normalizedCategory;
+          if (p == f || p.contains(f) || f.contains(p)) return true;
+          if (f.contains('veg') && p.contains('veg')) return true;
+          if (f.contains('fruit') && p.contains('fruit')) return true;
+          if (f.contains('dairy') && p.contains('dairy')) return true;
+          return false;
+        },
       );
     }
 
@@ -109,6 +118,13 @@ class LocalProductCatalog {
     int index = 0;
     return images.entries.map((MapEntry<String, String> entry) {
       final int current = index++;
+      final String resolvedCategory = (category == 'vegetables' &&
+              const <String>{
+                'amaranth', 'coriander', 'curry_leaves', 'dill_leaves',
+                'fenugreek', 'mint', 'palak', 'spinach', 'lettuce', 'kale'
+              }.contains(entry.key))
+          ? 'leafy_greens'
+          : category;
       final double price = _priceFor(category, current);
       final double mrp = (price * (1.12 + (current % 4) * 0.03)).roundToDouble();
       final String englishName = _title(entry.key);
@@ -118,7 +134,7 @@ class LocalProductCatalog {
         name: name,
         description:
             'Fresh $englishName, carefully quality-checked and packed for Farm To Home delivery.',
-        category: category,
+        category: resolvedCategory,
         imageUrl: entry.value,
         images: <String>[entry.value],
         shoppingMode: 'home',

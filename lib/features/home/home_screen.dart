@@ -1,15 +1,16 @@
 import 'dart:async';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import '../../data/repositories/session_repository.dart';
 import 'package:flutter/material.dart';
 
+import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/product_utils.dart';
 import '../../core/widgets/premium_toast.dart';
-import '../../data/local/local_product_catalog.dart';
 import '../../data/models/cart_item_model.dart';
 import '../../data/models/product_model.dart';
 import '../../providers/cart_provider.dart';
+import '../../providers/product_provider.dart';
 import 'widgets/floating_cart_bar.dart';
 import 'widgets/banner_slider.dart';
 import 'widgets/bottom_navigation.dart';
@@ -47,6 +48,13 @@ class _HomeScreenState extends State<HomeScreen> {
       value: 'vegetables',
       image: 'assets/images/categories/vegetables.png',
       fallbackIcon: Icons.eco_rounded,
+    ),
+    _CategoryItem(
+      title: 'Leafy Greens',
+      subtitle: 'Nutritious & Fresh',
+      value: 'leafy_greens',
+      image: 'assets/images/categories/vegetables.png',
+      fallbackIcon: Icons.grass_rounded,
     ),
     _CategoryItem(
       title: 'Fruits',
@@ -103,8 +111,8 @@ class _HomeScreenState extends State<HomeScreen> {
           'Plan bulk orders in advance and select a convenient delivery date.',
           button: 'PRE-ORDER',
           icon: Icons.calendar_month_rounded,
-          startColor: Color(0xFF60450F),
-          endColor: Color(0xFFD18C17),
+          startColor: const Color(0xFF60450F),
+          endColor: const Color(0xFFD18C17),
           route: '/delivery-method',
         ),
       ];
@@ -147,10 +155,14 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
   }
 
-  List<_ProductItem> get _products => LocalProductCatalog.featured(
-        shoppingMode: _shoppingMode,
-        limit: 12,
-      ).map(_ProductItem.fromModel).toList(growable: false);
+  List<_ProductItem> get _products {
+    try {
+      final List<ProductModel> remoteModels = context.watch<ProductProvider>().products;
+      return remoteModels.map(_ProductItem.fromModel).toList(growable: false);
+    } catch (_) {
+      return <_ProductItem>[];
+    }
+  }
 
   @override
   void initState() {
@@ -159,6 +171,11 @@ class _HomeScreenState extends State<HomeScreen> {
     _cartProvider = CartProvider()..listenToCart();
     _loadShoppingMode();
     _startBannerAutoSlide();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<ProductProvider>().listenToProducts();
+      }
+    });
   }
 
   @override
@@ -171,17 +188,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _startBannerAutoSlide() {
     _bannerTimer?.cancel();
-
     _bannerTimer = Timer.periodic(
       const Duration(seconds: 5),
-          (_) {
+      (_) {
         if (!mounted || !_bannerController.hasClients) {
           return;
         }
-
-        final int next =
-            (_currentBanner + 1) % _banners.length;
-
+        final int next = (_currentBanner + 1) % _banners.length;
         _bannerController.animateToPage(
           next,
           duration: const Duration(milliseconds: 450),
@@ -191,92 +204,30 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Future<void> _loadShoppingMode() async {
-    try {
-      final User? user =
-          FirebaseAuth.instance.currentUser;
+  Future<void> _loadShoppingMode() async {}
 
-      if (user == null) {
-        return;
-      }
-
-      final DocumentSnapshot<Map<String, dynamic>> document =
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .get();
-
-      final String mode =
-      (document.data()?['shoppingMode'] ?? 'home')
-          .toString();
-
-      if (!mounted) {
-        return;
-      }
-
-      if (mode == 'home' || mode == 'shop') {
-        setState(() {
-          _shoppingMode = mode;
-        });
-      }
-    } catch (_) {
-      // Default Home mode remains active.
-    }
-  }
-
-  Future<void> _saveShoppingMode(
-      String mode,
-      ) async {
-    try {
-      final User? user =
-          FirebaseAuth.instance.currentUser;
-
-      if (user == null) {
-        return;
-      }
-
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .set(
-        <String, dynamic>{
-          'shoppingMode': mode,
-          'updatedAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
-    } catch (_) {
-      // UI continues even when network sync fails.
-    }
-  }
+  Future<void> _saveShoppingMode(String mode) async {}
 
   String get _userName {
-    final User? user =
-        FirebaseAuth.instance.currentUser;
-
-    final String name =
-        user?.displayName?.trim() ?? '';
-
-    if (name.isEmpty) {
-      return 'Fresh Shopper';
+    final session = SessionRepository().currentSession;
+    final String email = session.email;
+    if (email.isNotEmpty) {
+      return email.split('@').first;
     }
-
-    return name.split(RegExp(r'\s+')).first;
+    return 'Shopper';
   }
 
   void _go(
-      String route, {
-        Object? arguments,
-      }) {
+    String route, {
+    Object? arguments,
+  }) {
     Navigator.of(context).pushNamed(
       route,
       arguments: arguments,
     );
   }
 
-  void _openCategory(
-      _CategoryItem category,
-      ) {
+  void _openCategory(_CategoryItem category) {
     _go(
       '/category-products',
       arguments: <String, dynamic>{
@@ -532,25 +483,29 @@ class _HomeScreenState extends State<HomeScreen> {
                               child: _buildSpecialOffer(),
                             ),
                             const SizedBox(height: 30),
-                            ProductSection(
-                              title: _shoppingMode == 'home'
-                                  ? 'Fresh picks for you'
-                                  : 'Wholesale favourites',
-                              subtitle: _shoppingMode == 'home'
-                                  ? 'Fresh products for your everyday needs'
-                                  : 'Popular bulk products for your business',
-                              products: _buildProducts(desktop: desktop),
-                              onViewAll: () => _go('/categories'),
-                              header: _buildSectionHeader(
-                                title: _shoppingMode == 'home'
-                                    ? 'Fresh picks for you'
-                                    : 'Wholesale favourites',
-                                subtitle: _shoppingMode == 'home'
-                                    ? 'Fresh products for your everyday needs'
-                                    : 'Popular bulk products for your business',
-                                action: 'View all',
-                                onTap: () => _go('/categories'),
-                              ),
+                            _buildCategorySection(
+                              title: 'Leafy Greens & Herbs',
+                              subtitle: 'Fresh palak, coriander, mint & organic greens',
+                              categoryKey: 'leafy_greens',
+                              desktop: desktop,
+                            ),
+                            _buildCategorySection(
+                              title: 'Farm Vegetables',
+                              subtitle: 'Daily cooking staples, roots & fresh veggies',
+                              categoryKey: 'vegetables',
+                              desktop: desktop,
+                            ),
+                            _buildCategorySection(
+                              title: 'Fresh Orchard Fruits',
+                              subtitle: 'Naturally sweet & ripe seasonal fruits',
+                              categoryKey: 'fruits',
+                              desktop: desktop,
+                            ),
+                            _buildCategorySection(
+                              title: 'Dairy & Farm Essentials',
+                              subtitle: 'Pure farm milk, ghee, paneer & fresh eggs',
+                              categoryKey: 'dairy',
+                              desktop: desktop,
                             ),
                             const SizedBox(height: 30),
                             RecommendedSection(
@@ -1159,7 +1114,54 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildProducts({
+  Widget _buildCategorySection({
+    required String title,
+    required String subtitle,
+    required String categoryKey,
+    required bool desktop,
+  }) {
+    final String target = categoryKey.trim().toLowerCase();
+    final List<_ProductItem> categoryProducts = _products
+        .where((_ProductItem p) {
+          final String cat = p.category.trim().toLowerCase();
+          return cat == target || cat.contains(target) || target.contains(cat);
+        })
+        .take(10)
+        .toList(growable: false);
+
+    if (categoryProducts.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      children: <Widget>[
+        ProductSection(
+          title: title,
+          subtitle: subtitle,
+          products: _buildProductListForItems(categoryProducts, desktop: desktop),
+          onViewAll: () => _go('/category-products', arguments: <String, dynamic>{
+            'category': categoryKey,
+            'title': title,
+            'shoppingMode': _shoppingMode,
+          }),
+          header: _buildSectionHeader(
+            title: title,
+            subtitle: subtitle,
+            action: 'View all',
+            onTap: () => _go('/category-products', arguments: <String, dynamic>{
+              'category': categoryKey,
+              'title': title,
+              'shoppingMode': _shoppingMode,
+            }),
+          ),
+        ),
+        const SizedBox(height: 30),
+      ],
+    );
+  }
+
+  Widget _buildProductListForItems(
+    List<_ProductItem> items, {
     required bool desktop,
   }) {
     return ListenableBuilder(
@@ -1168,10 +1170,10 @@ class _HomeScreenState extends State<HomeScreen> {
         height: desktop ? 355 : 326,
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
-          itemCount: _products.length,
+          itemCount: items.length,
           separatorBuilder: (BuildContext context, int index) => const SizedBox(width: 14),
           itemBuilder: (BuildContext context, int index) {
-            final _ProductItem product = _products[index];
+            final _ProductItem product = items[index];
             final int quantity = _quantityFor(product);
             return SizedBox(
               width: desktop ? 228 : 190,
@@ -1189,6 +1191,12 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildProducts({
+    required bool desktop,
+  }) {
+    return _buildProductListForItems(_products, desktop: desktop);
   }
 
   Widget _buildTrustSection() {
@@ -1737,7 +1745,13 @@ class _ProductCard extends StatelessWidget {
                           color: const Color(0xFFF1F8F4),
                           borderRadius: BorderRadius.circular(17),
                         ),
-                        child: PremiumProductImage(path: product.image),
+                        child: PremiumProductImage(
+                          path: product.image,
+                          fallbackPath: ProductUtils.assetPathFor(
+                            product.name,
+                            product.category,
+                          ),
+                        ),
                       ),
                     ),
                     Positioned.fill(
@@ -2221,6 +2235,7 @@ class _ProductItem {
   final String offer;
   final String image;
   double get savings => model.savings;
+  String get category => model.category;
 
   factory _ProductItem.fromModel(ProductModel product) {
     return _ProductItem(

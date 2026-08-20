@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class CouponModel {
   const CouponModel({
     required this.id,
@@ -46,9 +44,6 @@ class CouponModel {
     return discount.clamp(0, subtotal).toDouble();
   }
 
-  factory CouponModel.fromDocument(DocumentSnapshot<Map<String, dynamic>> doc) =>
-      CouponModel.fromMap(doc.data() ?? <String, dynamic>{}, documentId: doc.id);
-
   factory CouponModel.fromMap(Map<String, dynamic> map, {String documentId = ''}) => CouponModel(
         id: _text(documentId.isNotEmpty ? documentId : map['id']),
         code: _text(map['code']).toUpperCase(),
@@ -66,26 +61,49 @@ class CouponModel {
       );
 
   Map<String, dynamic> toMap() => <String, dynamic>{
-        'id': id, 'code': code, 'title': title, 'description': description,
-        'discountType': discountType, 'discountValue': discountValue,
-        'minimumOrder': minimumOrder, 'maximumDiscount': maximumDiscount,
-        'isActive': isActive, 'usageLimit': usageLimit, 'usedCount': usedCount,
-        if (startsAt != null) 'startsAt': Timestamp.fromDate(startsAt!),
-        if (endsAt != null) 'endsAt': Timestamp.fromDate(endsAt!),
+        'id': id,
+        'code': code,
+        'title': title,
+        'description': description,
+        'discountType': discountType,
+        'discountValue': discountValue,
+        'minimumOrder': minimumOrder,
+        'maximumDiscount': maximumDiscount,
+        'isActive': isActive,
+        'usageLimit': usageLimit,
+        'usedCount': usedCount,
+        if (startsAt != null) 'startsAt': startsAt!.toIso8601String(),
+        if (endsAt != null) 'endsAt': endsAt!.toIso8601String(),
       };
 
-  CouponModel copyWith({String? id, String? code, String? title,
-      String? description, String? discountType, double? discountValue,
-      double? minimumOrder, double? maximumDiscount, bool? isActive,
-      DateTime? startsAt, DateTime? endsAt, int? usageLimit, int? usedCount}) => CouponModel(
-        id: id ?? this.id, code: code ?? this.code, title: title ?? this.title,
+  CouponModel copyWith({
+    String? id,
+    String? code,
+    String? title,
+    String? description,
+    String? discountType,
+    double? discountValue,
+    double? minimumOrder,
+    double? maximumDiscount,
+    bool? isActive,
+    DateTime? startsAt,
+    DateTime? endsAt,
+    int? usageLimit,
+    int? usedCount,
+  }) =>
+      CouponModel(
+        id: id ?? this.id,
+        code: code ?? this.code,
+        title: title ?? this.title,
         description: description ?? this.description,
         discountType: discountType ?? this.discountType,
         discountValue: discountValue ?? this.discountValue,
         minimumOrder: minimumOrder ?? this.minimumOrder,
         maximumDiscount: maximumDiscount ?? this.maximumDiscount,
-        isActive: isActive ?? this.isActive, startsAt: startsAt ?? this.startsAt,
-        endsAt: endsAt ?? this.endsAt, usageLimit: usageLimit ?? this.usageLimit,
+        isActive: isActive ?? this.isActive,
+        startsAt: startsAt ?? this.startsAt,
+        endsAt: endsAt ?? this.endsAt,
+        usageLimit: usageLimit ?? this.usageLimit,
         usedCount: usedCount ?? this.usedCount,
       );
 }
@@ -94,9 +112,14 @@ String _text(dynamic value, {String fallback = ''}) {
   final String result = value?.toString().trim() ?? '';
   return result.isEmpty ? fallback : result;
 }
+
 double _number(dynamic value) => value is num ? value.toDouble() : double.tryParse('$value') ?? 0;
 int _integer(dynamic value) => value is num ? value.toInt() : int.tryParse('$value') ?? 0;
-bool _boolean(dynamic value, {bool fallback = false}) => value is bool ? value :
-    value == null ? fallback : <String>{'true', '1', 'yes'}.contains('$value'.toLowerCase());
-DateTime? _date(dynamic value) => value is Timestamp ? value.toDate() :
+bool _boolean(dynamic value, {bool fallback = false}) => value is bool
+    ? value
+    : value == null
+        ? fallback
+        : <String>{'true', '1', 'yes'}.contains('$value'.toLowerCase());
+
+DateTime? _date(dynamic value) =>
     value is DateTime ? value : DateTime.tryParse(value?.toString() ?? '');

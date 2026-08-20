@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../../app/app_routes.dart';
@@ -23,7 +22,7 @@ class OrderConfirmationScreen extends StatefulWidget {
 class _OrderConfirmationScreenState extends State<OrderConfirmationScreen> {
   Map<String, dynamic> _order = <String, dynamic>{};
   bool _initialized = false;
-  bool _loading = true;
+  bool _loading = false;
   String? _loadMessage;
 
   @override
@@ -51,68 +50,10 @@ class _OrderConfirmationScreenState extends State<OrderConfirmationScreen> {
   }
 
   Future<void> _loadOrder() async {
-    final String orderId = _text(_order['orderId']);
-
-    if (orderId.isEmpty) {
-      if (!mounted) {
-        return;
-      }
-
-      setState(() {
-        _loading = false;
-        _loadMessage = 'Order details are not available.';
-      });
-      return;
-    }
-
-    try {
-      final DocumentSnapshot<Map<String, dynamic>> snapshot =
-      await FirebaseFirestore.instance
-          .collection('orders')
-          .doc(orderId)
-          .get();
-
-      if (!mounted) {
-        return;
-      }
-
-      if (snapshot.exists && snapshot.data() != null) {
-        setState(() {
-          _order = <String, dynamic>{
-            ..._order,
-            ...snapshot.data()!,
-            'orderId': orderId,
-          };
-          _loading = false;
-        });
-      } else {
-        setState(() {
-          _loading = false;
-          _loadMessage =
-          'Order placed successfully. Full details will appear shortly.';
-        });
-      }
-    } on FirebaseException {
-      if (!mounted) {
-        return;
-      }
-
-      setState(() {
-        _loading = false;
-        _loadMessage =
-        'Order placed successfully. Unable to refresh details right now.';
-      });
-    } catch (_) {
-      if (!mounted) {
-        return;
-      }
-
-      setState(() {
-        _loading = false;
-        _loadMessage =
-        'Order placed successfully. Unable to refresh details right now.';
-      });
-    }
+    if (!mounted) return;
+    setState(() {
+      _loading = false;
+    });
   }
 
   void _continueShopping() {

@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class OfferModel {
   const OfferModel({
     required this.id,
@@ -35,9 +33,6 @@ class OfferModel {
         (endsAt == null || !now.isAfter(endsAt!));
   }
 
-  factory OfferModel.fromDocument(DocumentSnapshot<Map<String, dynamic>> doc) =>
-      OfferModel.fromMap(doc.data() ?? <String, dynamic>{}, documentId: doc.id);
-
   factory OfferModel.fromMap(Map<String, dynamic> map, {String documentId = ''}) => OfferModel(
         id: _text(documentId.isNotEmpty ? documentId : map['id']),
         title: _text(map['title'], fallback: 'Special Offer'),
@@ -54,26 +49,47 @@ class OfferModel {
       );
 
   Map<String, dynamic> toMap() => <String, dynamic>{
-        'id': id, 'title': title, 'description': description, 'code': code,
-        'discountType': discountType, 'discountValue': discountValue,
-        'minimumOrder': minimumOrder, 'maximumDiscount': maximumDiscount,
-        'imageUrl': imageUrl, 'isActive': isActive,
-        if (startsAt != null) 'startsAt': Timestamp.fromDate(startsAt!),
-        if (endsAt != null) 'endsAt': Timestamp.fromDate(endsAt!),
+        'id': id,
+        'title': title,
+        'description': description,
+        'code': code,
+        'discountType': discountType,
+        'discountValue': discountValue,
+        'minimumOrder': minimumOrder,
+        'maximumDiscount': maximumDiscount,
+        'imageUrl': imageUrl,
+        'isActive': isActive,
+        if (startsAt != null) 'startsAt': startsAt!.toIso8601String(),
+        if (endsAt != null) 'endsAt': endsAt!.toIso8601String(),
       };
 
-  OfferModel copyWith({String? id, String? title, String? description,
-      String? code, String? discountType, double? discountValue,
-      double? minimumOrder, double? maximumDiscount, String? imageUrl,
-      bool? isActive, DateTime? startsAt, DateTime? endsAt}) => OfferModel(
-        id: id ?? this.id, title: title ?? this.title,
-        description: description ?? this.description, code: code ?? this.code,
+  OfferModel copyWith({
+    String? id,
+    String? title,
+    String? description,
+    String? code,
+    String? discountType,
+    double? discountValue,
+    double? minimumOrder,
+    double? maximumDiscount,
+    String? imageUrl,
+    bool? isActive,
+    DateTime? startsAt,
+    DateTime? endsAt,
+  }) =>
+      OfferModel(
+        id: id ?? this.id,
+        title: title ?? this.title,
+        description: description ?? this.description,
+        code: code ?? this.code,
         discountType: discountType ?? this.discountType,
         discountValue: discountValue ?? this.discountValue,
         minimumOrder: minimumOrder ?? this.minimumOrder,
         maximumDiscount: maximumDiscount ?? this.maximumDiscount,
-        imageUrl: imageUrl ?? this.imageUrl, isActive: isActive ?? this.isActive,
-        startsAt: startsAt ?? this.startsAt, endsAt: endsAt ?? this.endsAt,
+        imageUrl: imageUrl ?? this.imageUrl,
+        isActive: isActive ?? this.isActive,
+        startsAt: startsAt ?? this.startsAt,
+        endsAt: endsAt ?? this.endsAt,
       );
 }
 
@@ -81,8 +97,14 @@ String _text(dynamic value, {String fallback = ''}) {
   final String result = value?.toString().trim() ?? '';
   return result.isEmpty ? fallback : result;
 }
+
 double _number(dynamic value) => value is num ? value.toDouble() : double.tryParse('$value') ?? 0;
-bool _boolean(dynamic value, {bool fallback = false}) => value is bool ? value :
-    value == null ? fallback : <String>{'true', '1', 'yes'}.contains('$value'.toLowerCase());
-DateTime? _date(dynamic value) => value is Timestamp ? value.toDate() :
+
+bool _boolean(dynamic value, {bool fallback = false}) => value is bool
+    ? value
+    : value == null
+        ? fallback
+        : <String>{'true', '1', 'yes'}.contains('$value'.toLowerCase());
+
+DateTime? _date(dynamic value) =>
     value is DateTime ? value : DateTime.tryParse(value?.toString() ?? '');

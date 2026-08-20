@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 import '../../core/utils/product_utils.dart';
 
 class ProductModel {
@@ -8,6 +6,7 @@ class ProductModel {
     required this.name,
     required this.description,
     required this.category,
+    this.subCategory = '',
     required this.imageUrl,
     required List<String> images,
     required this.shoppingMode,
@@ -32,6 +31,7 @@ class ProductModel {
   final String name;
   final String description;
   final String category;
+  final String subCategory;
   final String imageUrl;
   final List<String> images;
   final String shoppingMode;
@@ -62,15 +62,6 @@ class ProductModel {
     return List<String>.unmodifiable(values);
   }
 
-  factory ProductModel.fromDocument(
-      DocumentSnapshot<Map<String, dynamic>> document,
-      ) {
-    return ProductModel.fromMap(
-      document.data() ?? <String, dynamic>{},
-      documentId: document.id,
-    );
-  }
-
   factory ProductModel.fromMap(
       Map<String, dynamic> map, {
         String documentId = '',
@@ -79,14 +70,44 @@ class ProductModel {
     double mrp = _toDouble(map['mrp'], fallback: price);
     if (mrp < price) mrp = price;
 
+    String categoryStr = '';
+    if (map['categoryName'] != null && map['categoryName'].toString().trim().isNotEmpty) {
+      categoryStr = map['categoryName'].toString().trim();
+    } else if (map['category'] is Map) {
+      final Map catMap = map['category'] as Map;
+      categoryStr = catMap['name']?.toString() ?? catMap['slug']?.toString() ?? catMap['id']?.toString() ?? '';
+    } else if (map['category'] != null) {
+      categoryStr = map['category'].toString().trim();
+    }
+
+    String subCategoryStr = '';
+    if (map['subCategoryName'] != null && map['subCategoryName'].toString().trim().isNotEmpty) {
+      subCategoryStr = map['subCategoryName'].toString().trim();
+    } else if (map['subCategory'] is Map) {
+      final Map subCatMap = map['subCategory'] as Map;
+      subCategoryStr = subCatMap['name']?.toString() ?? subCatMap['slug']?.toString() ?? subCatMap['id']?.toString() ?? '';
+    } else if (map['subCategory'] != null) {
+      subCategoryStr = map['subCategory'].toString().trim();
+    }
+
+    final String productName = _text(
+      map['name'],
+      fallback: 'Fresh Product',
+    );
+    final String image = _text(map['imageUrl'] ?? map['image']);
+    final String fallbackImage = ProductUtils.assetPathFor(productName, categoryStr);
+    final bool hasUsableImage = image.startsWith('http://') ||
+      image.startsWith('https://') ||
+      image.startsWith('assets/');
     return ProductModel(
       id: _text(documentId.isNotEmpty ? documentId : map['id']),
       name: ProductUtils.localizedName(
-        _text(map['name'], fallback: 'Fresh Product'),
+        productName,
       ),
       description: _text(map['description']),
-      category: _text(map['category']),
-      imageUrl: _text(map['imageUrl'] ?? map['image']),
+      category: categoryStr,
+      subCategory: subCategoryStr,
+          imageUrl: hasUsableImage ? image : fallbackImage,
       images: _stringList(map['images'] ?? map['imageUrls']),
       shoppingMode:
       _text(map['shoppingMode']).toLowerCase() == 'shop' ? 'shop' : 'home',
@@ -126,8 +147,8 @@ class ProductModel {
       'farmerId': farmerId,
       'nutritionInfo': nutritionInfo,
       'benefits': benefits,
-      if (createdAt != null) 'createdAt': Timestamp.fromDate(createdAt!),
-      if (updatedAt != null) 'updatedAt': Timestamp.fromDate(updatedAt!),
+      if (createdAt != null) 'createdAt': createdAt!.toIso8601String(),
+      if (updatedAt != null) 'updatedAt': updatedAt!.toIso8601String(),
     };
   }
 
@@ -224,7 +245,6 @@ Map<String, String> _stringMap(dynamic value) {
 }
 
 DateTime? _toDateTime(dynamic value) {
-  if (value is Timestamp) return value.toDate();
   if (value is DateTime) return value;
   return DateTime.tryParse(value?.toString() ?? '');
 }

@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host",
-    "build": "vite build",
+    "build": "flutter build web --release",
+    "build:react": "vite build",
     "lint": "oxlint",
     "preview": "vite preview"
   },

@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/app_colors.dart';
-
 class ThemeSelector extends StatelessWidget {
   const ThemeSelector({
     super.key,
-    required this.selected,
-    required this.onChanged,
-  });
+    String selected = 'fresh',
+    String? selectedTheme,
+    ValueChanged<String>? onChanged,
+    ValueChanged<String>? onSelected,
+  })  : selected = selectedTheme ?? selected,
+        onChanged = onChanged ?? onSelected ?? _noop;
+
+  static void _noop(String _) {}
 
   final String selected;
   final ValueChanged<String> onChanged;
@@ -34,16 +37,6 @@ class ThemeSelector extends StatelessWidget {
               onTap: onChanged,
             ),
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: _ThemeOption(
-              value: 'cream',
-              title: 'Cream',
-              colors: const <Color>[Color(0xFFFFF8E8), Color(0xFFFFE3A0)],
-              selected: selected == 'cream',
-              onTap: onChanged,
-            ),
-          ),
         ],
       );
 }
@@ -66,49 +59,13 @@ class _ThemeOption extends StatelessWidget {
   @override
   Widget build(BuildContext context) => InkWell(
         onTap: () => onTap(value),
-        borderRadius: BorderRadius.circular(16),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.all(8),
+        child: Container(
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: selected ? AppColors.primary : AppColors.border,
-              width: selected ? 1.7 : 1,
-            ),
+            border: Border.all(color: selected ? Colors.green : Colors.grey),
+            borderRadius: BorderRadius.circular(12),
           ),
-          child: Column(
-            children: <Widget>[
-              Container(
-                height: 48,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(colors: colors),
-                  borderRadius: BorderRadius.circular(11),
-                ),
-                child: Align(
-                  alignment: Alignment.topRight,
-                  child: Padding(
-                    padding: const EdgeInsets.all(5),
-                    child: Icon(
-                      selected ? Icons.check_circle_rounded : Icons.circle_outlined,
-                      color: selected ? AppColors.primary : Colors.white70,
-                      size: 17,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 7),
-              Text(
-                title,
-                style: TextStyle(
-                  color: selected ? AppColors.primary : AppColors.textPrimary,
-                  fontSize: 9,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ],
-          ),
+          child: Text(title),
         ),
       );
 }

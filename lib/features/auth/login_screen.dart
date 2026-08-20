@@ -1,11 +1,16 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../app/app_routes.dart';
+import '../../core/config/backend_config.dart';
+import '../../core/constants/api_endpoints.dart';
+import '../../core/errors/app_exception.dart';
+import '../../core/errors/network_exception.dart';
+import '../../core/network/api_response.dart';
+import '../../core/services/backend_api_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../data/repositories/session_repository.dart';
 import 'forgot_password_screen.dart';
 import 'register_screen.dart';
 import 'widgets/apple_login_button.dart';
@@ -22,12 +27,10 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final BackendApiService _apiService = BackendApiService();
 
-  final TextEditingController _identifierController =
-  TextEditingController();
-
-  final TextEditingController _passwordController =
-  TextEditingController();
+  final TextEditingController _identifierController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
 
   final FocusNode _identifierFocus = FocusNode();
   final FocusNode _passwordFocus = FocusNode();
@@ -43,143 +46,47 @@ class _LoginScreenState extends State<LoginScreen> {
     _passwordController.dispose();
     _identifierFocus.dispose();
     _passwordFocus.dispose();
+    _apiService.dispose();
     super.dispose();
   }
 
   String _normalizePhone(String value) {
-    String digits = value.replaceAll(
-      RegExp(r'\D'),
-      '',
-    );
-
-    if (digits.startsWith('91') &&
-        digits.length == 12) {
+    String digits = value.replaceAll(RegExp(r'\D'), '');
+    if (digits.startsWith('91') && digits.length == 12) {
       digits = digits.substring(2);
     }
-
     return digits;
   }
 
-  String? _validateIdentifier(
-      String? value,
-      ) {
-    final String input =
-        value?.trim() ?? '';
-
-    if (input.isEmpty) {
-      return 'Enter your email or mobile number';
-    }
+  String? _validateIdentifier(String? value) {
+    final String input = value?.trim() ?? '';
+    if (input.isEmpty) return 'Enter your email or mobile number';
 
     if (input.contains('@')) {
-      final bool validEmail =
-      RegExp(
-        r'^[^\s@]+@[^\s@]+\.[^\s@]+$',
-      ).hasMatch(input);
-
-      if (!validEmail) {
-        return 'Enter a valid email address';
-      }
-
+      final bool validEmail = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(input);
+      if (!validEmail) return 'Enter a valid email address';
       return null;
     }
 
-    final String phone =
-    _normalizePhone(input);
-
-    if (!RegExp(
-      r'^[6-9]\d{9}$',
-    ).hasMatch(phone)) {
+    final String phone = _normalizePhone(input);
+    if (!RegExp(r'^[6-9]\d{9}$').hasMatch(phone)) {
       return 'Enter a valid 10-digit mobile number';
     }
 
     return null;
   }
 
-  String? _validatePassword(
-      String? value,
-      ) {
-    final String password =
-        value ?? '';
-
-    if (password.isEmpty) {
-      return 'Enter your password';
-    }
-
-    if (password.length < 8) {
-      return 'Password must contain at least 8 characters';
-    }
-
+  String? _validatePassword(String? value) {
+    final String password = value ?? '';
+    if (password.isEmpty) return 'Enter your password';
+    if (password.length < 8) return 'Password must contain at least 8 characters';
     return null;
-  }
-
-  Future<String> _emailForIdentifier(
-      String identifier,
-      ) async {
-    final String input =
-    identifier.trim();
-
-    if (input.contains('@')) {
-      return input.toLowerCase();
-    }
-
-    final String phone =
-    _normalizePhone(input);
-
-    QuerySnapshot<Map<String, dynamic>>
-    result =
-    await FirebaseFirestore.instance
-        .collection('users')
-        .where(
-      'phoneNumber',
-      isEqualTo: '+91$phone',
-    )
-        .limit(1)
-        .get();
-
-    if (result.docs.isEmpty) {
-      result =
-      await FirebaseFirestore.instance
-          .collection('users')
-          .where(
-        'phoneNumber',
-        isEqualTo: phone,
-      )
-          .limit(1)
-          .get();
-    }
-
-    if (result.docs.isEmpty) {
-      throw FirebaseAuthException(
-        code: 'user-not-found',
-        message:
-        'No account was found for this mobile number.',
-      );
-    }
-
-    final String email =
-    (result.docs.first
-        .data()['email'] ??
-        '')
-        .toString()
-        .trim();
-
-    if (email.isEmpty) {
-      throw FirebaseAuthException(
-        code: 'missing-email',
-        message:
-        'This mobile number is not linked to an email account.',
-      );
-    }
-
-    return email.toLowerCase();
   }
 
   Future<void> _login() async {
     FocusScope.of(context).unfocus();
 
-    if (!(_formKey.currentState
-        ?.validate() ??
-        false)) {
+    if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
 
@@ -189,63 +96,63 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      final String email =
-      await _emailForIdentifier(
-        _identifierController.text,
+      final String loginEmail = _identifierController.text.trim();
+      debugPrint('LOGIN URL: ${BackendConfig.baseUrl}${ApiEndpoints.login}');
+      debugPrint('LOGIN EMAIL: $loginEmail');
+
+      final ApiResponse<dynamic> response = await _apiService.login(
+        identifier: loginEmail,
+        password: _passwordController.text,
       );
 
-      final UserCredential result =
-      await FirebaseAuth.instance
-          .signInWithEmailAndPassword(
-        email: email,
-        password:
-        _passwordController.text,
-      );
+      debugPrint('LOGIN STATUS: ${response.statusCode}');
+      debugPrint('LOGIN RESPONSE: ${response.message}');
 
-      final User? user = result.user;
+      if (!mounted) return;
 
-      if (user == null) {
-        throw FirebaseAuthException(
-          code: 'login-failed',
+      if (response.isSuccess) {
+        if (response.data != null && response.data is Map) {
+          final Map<String, dynamic> data = Map<String, dynamic>.from(response.data as Map);
+          final String? token = data['accessToken']?.toString() ?? data['token']?.toString();
+          final String userEmail = data['email']?.toString() ?? loginEmail;
+          if (token != null && token.isNotEmpty) {
+            SessionRepository.setSession(
+              userId: userEmail,
+              email: userEmail,
+              token: token,
+            );
+          }
+        }
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          AppRoutes.home,
+          (Route<dynamic> route) => false,
+        );
+      } else {
+        _showError(
+          response.message.isNotEmpty
+              ? response.message
+              : 'Invalid email/phone or password. Please try again.',
         );
       }
-
+    } catch (err) {
       if (!mounted) return;
-
-      await FirebaseFirestore.instance.collection('users').doc(user.uid).set(
-        <String, dynamic>{
-          'lastLoginAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
-
-      if (!mounted) return;
-
-      Navigator.of(context)
-          .pushNamedAndRemoveUntil(
-        AppRoutes.home,
-            (Route<dynamic> route) => false,
-      );
-    } on FirebaseAuthException catch (error) {
-      if (!mounted) return;
-
-      _showError(
-        _firebaseMessage(error),
-      );
-    } on FirebaseException catch (error) {
-      if (!mounted) return;
-
-      _showError(
-        error.message ??
-            'Firebase request failed.',
-      );
-    } catch (_) {
-      if (!mounted) return;
-
-      _showError(
-        'Unable to login right now. Please try again.',
-      );
+      String errorMsg = 'Unable to login right now. Please try again.';
+      if (err is NetworkException) {
+        debugPrint('LOGIN STATUS: ${err.statusCode}');
+        debugPrint('LOGIN RESPONSE DETAILS: ${err.details}');
+        if (err.details is Map &&
+            (err.details as Map)['message'] != null &&
+            (err.details as Map)['message'].toString().trim().isNotEmpty) {
+          errorMsg = (err.details as Map)['message'].toString();
+        } else if (err.statusCode == 401) {
+          errorMsg = 'Invalid email or password';
+        } else if (err.message.isNotEmpty) {
+          errorMsg = err.message;
+        }
+      } else if (err is AppException) {
+        errorMsg = err.message;
+      }
+      _showError(errorMsg);
     } finally {
       if (mounted) {
         setState(() {
@@ -256,175 +163,11 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _continueWithGoogle() async {
-    setState(() {
-      _loading = true;
-      _socialLoading = 'google';
-    });
-
-    try {
-      final GoogleAuthProvider provider =
-      GoogleAuthProvider()
-        ..setCustomParameters(
-          <String, String>{
-            'prompt': 'select_account',
-          },
-        );
-
-      final UserCredential credential =
-      kIsWeb
-          ? await FirebaseAuth.instance
-          .signInWithPopup(provider)
-          : await FirebaseAuth.instance
-          .signInWithProvider(provider);
-
-      await _completeSocialSignIn(
-        credential,
-      );
-    } on FirebaseAuthException catch (error) {
-      if (!mounted) return;
-
-      _showError(
-        _firebaseMessage(error),
-      );
-    } catch (_) {
-      if (!mounted) return;
-
-      _showError(
-        'Unable to continue with Google.',
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _loading = false;
-          _socialLoading = null;
-        });
-      }
-    }
+    _showError('Google login is not supported in REST mode.');
   }
 
   Future<void> _continueWithApple() async {
-    setState(() {
-      _loading = true;
-      _socialLoading = 'apple';
-    });
-
-    try {
-      final OAuthProvider provider =
-      OAuthProvider('apple.com')
-        ..addScope('email')
-        ..addScope('name');
-
-      final UserCredential credential =
-      kIsWeb
-          ? await FirebaseAuth.instance
-          .signInWithPopup(provider)
-          : await FirebaseAuth.instance
-          .signInWithProvider(provider);
-
-      await _completeSocialSignIn(
-        credential,
-      );
-    } on FirebaseAuthException catch (error) {
-      if (!mounted) return;
-
-      _showError(
-        _firebaseMessage(error),
-      );
-    } catch (_) {
-      if (!mounted) return;
-
-      _showError(
-        'Unable to continue with Apple.',
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _loading = false;
-          _socialLoading = null;
-        });
-      }
-    }
-  }
-
-  Future<void> _completeSocialSignIn(
-      UserCredential credential,
-      ) async {
-    final User? user =
-        credential.user;
-
-    if (user == null) {
-      throw FirebaseAuthException(
-        code: 'social-login-failed',
-      );
-    }
-
-    final DocumentReference<
-        Map<String, dynamic>> ref =
-    FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid);
-
-    final DocumentSnapshot<
-        Map<String, dynamic>> existing =
-    await ref.get();
-
-    final List<String> names =
-    (user.displayName ?? '')
-        .trim()
-        .split(RegExp(r'\s+'));
-
-    final String firstName =
-    names.isNotEmpty &&
-        names.first.isNotEmpty
-        ? names.first
-        : '';
-
-    final String lastName =
-    names.length > 1
-        ? names.sublist(1).join(' ')
-        : '';
-
-    final Map<String, dynamic> data =
-    <String, dynamic>{
-      'uid': user.uid,
-      'firstName': firstName,
-      'lastName': lastName,
-      'displayName':
-      user.displayName ?? '',
-      'email': user.email ?? '',
-      'phoneNumber':
-      user.phoneNumber ?? '',
-      'photoUrl':
-      user.photoURL ?? '',
-      'phoneVerified':
-      user.phoneNumber?.isNotEmpty ==
-          true,
-      'shoppingMode':
-      existing.data()?['shoppingMode'] ??
-          'home',
-      'updatedAt':
-      FieldValue.serverTimestamp(),
-      'lastLoginAt':
-      FieldValue.serverTimestamp(),
-    };
-
-    if (!existing.exists) {
-      data['createdAt'] =
-          FieldValue.serverTimestamp();
-    }
-
-    await ref.set(
-      data,
-      SetOptions(merge: true),
-    );
-
-    if (!mounted) return;
-
-    Navigator.of(context)
-        .pushNamedAndRemoveUntil(
-      existing.exists ? AppRoutes.home : AppRoutes.completeProfile,
-          (Route<dynamic> route) => false,
-    );
+    _showError('Apple login is not supported in REST mode.');
   }
 
   void _openRegister() {
@@ -432,8 +175,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) =>
-        const RegisterScreen(),
+        builder: (_) => const RegisterScreen(),
       ),
     );
   }
@@ -443,46 +185,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) =>
-        const ForgotPasswordScreen(),
+        builder: (_) => const ForgotPasswordScreen(),
       ),
     );
-  }
-
-  String _firebaseMessage(
-      FirebaseAuthException error,
-      ) {
-    switch (error.code) {
-      case 'user-not-found':
-        return error.message ??
-            'No account was found with these details.';
-
-      case 'wrong-password':
-      case 'invalid-credential':
-        return 'Incorrect email/mobile number or password.';
-
-      case 'invalid-email':
-        return 'Enter a valid email address.';
-
-      case 'user-disabled':
-        return 'This account has been disabled.';
-
-      case 'too-many-requests':
-        return 'Too many attempts. Please try again later.';
-
-      case 'network-request-failed':
-        return 'Check your internet connection and try again.';
-
-      case 'popup-closed-by-user':
-        return 'Sign in was cancelled.';
-
-      case 'account-exists-with-different-credential':
-        return 'An account already exists with this email using another sign-in method.';
-
-      default:
-        return error.message ??
-            'Authentication failed. Please try again.';
-    }
   }
 
   void _showError(String message) {
@@ -490,37 +195,18 @@ class _LoginScreenState extends State<LoginScreen> {
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
-          behavior:
-          SnackBarBehavior.floating,
-          backgroundColor:
-          AppColors.error,
-          margin:
-          const EdgeInsets.all(16),
-          shape:
-          RoundedRectangleBorder(
-            borderRadius:
-            BorderRadius.circular(16),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: AppColors.error,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
           ),
-          content: Row(
-            children: <Widget>[
-              const Icon(
-                Icons
-                    .error_outline_rounded,
-                color: Colors.white,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  message,
-                  style:
-                  const TextStyle(
-                    color: Colors.white,
-                    fontWeight:
-                    FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
+          content: Text(
+            message,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
       );
@@ -529,23 +215,21 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor:
-      AppColors.background,
+      backgroundColor: AppColors.background,
       resizeToAvoidBottomInset: true,
       body: AuthBackground(
         child: LayoutBuilder(
           builder: (
             BuildContext context,
             BoxConstraints constraints,
-            ) {
-          final bool compact =
-              constraints.maxWidth < 820;
+          ) {
+            final bool compact = constraints.maxWidth < 820;
 
-          if (compact) {
-            return _buildMobile();
-          }
+            if (compact) {
+              return _buildMobile();
+            }
 
-          return _buildDesktop();
+            return _buildDesktop();
           },
         ),
       ),
@@ -554,13 +238,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Widget _buildDesktop() {
     return Container(
-      decoration:
-      const BoxDecoration(
+      decoration: const BoxDecoration(
         gradient: LinearGradient(
-          begin:
-          Alignment.topLeft,
-          end:
-          Alignment.bottomRight,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
           colors: <Color>[
             Color(0xFFF1F8F4),
             Color(0xFFFFFCF5),
@@ -568,10 +249,8 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       ),
       child: SafeArea(
-        child:
-        SingleChildScrollView(
-          padding:
-          const EdgeInsets.all(24),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
           child: Center(
             child:
             ConstrainedBox(

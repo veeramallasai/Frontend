@@ -1,8 +1,7 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/product_utils.dart';
 import '../../core/widgets/premium_toast.dart';
 import '../../data/models/cart_item_model.dart';
 import '../../data/models/product_model.dart';
@@ -65,85 +64,24 @@ class _CategoryProductsScreenState
     super.dispose();
   }
 
-  Future<void> _loadSavedShoppingMode() async {
-    try {
-      final User? user =
-          FirebaseAuth.instance.currentUser;
-
-      if (user == null) {
-        return;
-      }
-
-      final DocumentSnapshot<Map<String, dynamic>>
-      snapshot =
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .get();
-
-      final String mode =
-      (snapshot.data()?['shoppingMode'] ??
-          _shoppingMode)
-          .toString();
-
-      if (!mounted) {
-        return;
-      }
-
-      if (mode == 'home' || mode == 'shop') {
-        setState(() {
-          _shoppingMode = mode;
-        });
-      }
-    } catch (_) {
-      // Current mode remains active.
-    }
-  }
+  Future<void> _loadSavedShoppingMode() async {}
 
   Future<void> _saveShoppingMode(
       String mode,
-      ) async {
-    try {
-      final User? user =
-          FirebaseAuth.instance.currentUser;
-
-      if (user == null) {
-        return;
-      }
-
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .set(
-        <String, dynamic>{
-          'shoppingMode': mode,
-          'updatedAt':
-          FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
-    } catch (_) {
-      // UI remains usable if Firestore sync fails.
-    }
-  }
+      ) async {}
 
   Future<void> _refreshProducts() async {
     setState(() {});
   }
 
-  void _go(
-      String route, {
-        Object? arguments,
-      }) {
+  void _go(String route, {Object? arguments}) {
     Navigator.of(context).pushNamed(
       route,
       arguments: arguments,
     );
   }
 
-  void _openProduct(
-      _ProductViewModel product,
-      ) {
+  void _openProduct(_ProductViewModel product) {
     _go(
       '/product-details',
       arguments: <String, dynamic>{
@@ -154,117 +92,77 @@ class _CategoryProductsScreenState
   }
 
   Future<void> _showModeSelector() async {
-    final String? selected =
-    await showModalBottomSheet<String>(
+    final String? selected = await showModalBottomSheet<String>(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (
-          BuildContext sheetContext,
-          ) {
+      builder: (BuildContext sheetContext) {
         return SafeArea(
           child: Container(
             margin: const EdgeInsets.all(12),
-            padding:
-            const EdgeInsets.fromLTRB(
-              20,
-              14,
-              20,
-              22,
-            ),
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 22),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius:
-              BorderRadius.circular(28),
-              boxShadow:
-              const <BoxShadow>[
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: const <BoxShadow>[
                 BoxShadow(
-                  color:
-                  Color(0x28000000),
+                  color: Color(0x28000000),
                   blurRadius: 40,
-                  offset:
-                  Offset(0, 16),
+                  offset: Offset(0, 16),
                 ),
               ],
             ),
             child: Column(
-              mainAxisSize:
-              MainAxisSize.min,
-              crossAxisAlignment:
-              CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Center(
                   child: Container(
                     width: 42,
                     height: 5,
-                    decoration:
-                    BoxDecoration(
-                      color:
-                      AppColors.border,
-                      borderRadius:
-                      BorderRadius
-                          .circular(20),
+                    decoration: BoxDecoration(
+                      color: AppColors.border,
+                      borderRadius: BorderRadius.circular(20),
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 20),
-
                 const Text(
                   'Choose shopping mode',
                   style: TextStyle(
-                    color:
-                    AppColors.textPrimary,
+                    color: AppColors.textPrimary,
                     fontSize: 21,
-                    fontWeight:
-                    FontWeight.w900,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
-
                 const SizedBox(height: 6),
-
                 const Text(
                   'Pack sizes and prices change automatically for your selected shopping mode.',
                   style: TextStyle(
-                    color: AppColors
-                        .textSecondary,
+                    color: AppColors.textSecondary,
                     fontSize: 12,
                     height: 1.45,
-                    fontWeight:
-                    FontWeight.w600,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-
                 const SizedBox(height: 20),
-
                 _ModeOption(
                   icon: Icons.home_rounded,
                   title: 'For Home',
-                  subtitle:
-                  'Retail quantities • 250g • 500g • 1kg • 2kg',
-                  selected:
-                  _shoppingMode == 'home',
+                  subtitle: 'Retail quantities • 250g • 500g • 1kg • 2kg',
+                  selected: _shoppingMode == 'home',
                   onTap: () {
-                    Navigator.of(
-                      sheetContext,
-                    ).pop('home');
+                    Navigator.of(sheetContext).pop('home');
                   },
                 ),
-
                 const SizedBox(height: 11),
-
                 _ModeOption(
-                  icon:
-                  Icons.storefront_rounded,
+                  icon: Icons.storefront_rounded,
                   title: 'For Shop Owners',
-                  subtitle:
-                  'Bulk quantities • Bag • Crate • Tray • Box',
-                  selected:
-                  _shoppingMode == 'shop',
+                  subtitle: 'Bulk quantities • Bag • Crate • Tray • Box',
+                  selected: _shoppingMode == 'shop',
                   onTap: () {
-                    Navigator.of(
-                      sheetContext,
-                    ).pop('shop');
+                    Navigator.of(sheetContext).pop('shop');
                   },
                 ),
               ],
@@ -274,8 +172,7 @@ class _CategoryProductsScreenState
       },
     );
 
-    if (selected == null ||
-        selected == _shoppingMode) {
+    if (selected == null || selected == _shoppingMode) {
       return;
     }
 
@@ -593,15 +490,22 @@ class _CategoryProductsScreenState
           _ProductViewModel
           product,
           ) {
+        final String prodCat = _normalize(product.category);
         final bool categoryMatch = category == 'seasonal' ||
-            _normalize(product.category) == category;
+            category == 'all' ||
+            category.isEmpty ||
+            prodCat == category ||
+            prodCat.contains(category) ||
+            category.contains(prodCat) ||
+            (category.contains('veg') && prodCat.contains('veg')) ||
+            (category.contains('fruit') && prodCat.contains('fruit')) ||
+            (category.contains('dairy') && prodCat.contains('dairy'));
 
         if (!categoryMatch) {
           return false;
         }
 
-        if (!product
-            .availableForMode) {
+        if (!product.availableForMode) {
           return false;
         }
 
@@ -1491,6 +1395,10 @@ class _ProductCard
                       child:
                       _ProductImage(
                         image: product.image,
+                        fallbackPath: ProductUtils.assetPathFor(
+                          product.name,
+                          product.category,
+                        ),
                       ),
                     ),
 
@@ -1747,9 +1655,11 @@ class _ProductImage
     extends StatelessWidget {
   const _ProductImage({
     required this.image,
+    required this.fallbackPath,
   });
 
   final String image;
+  final String fallbackPath;
 
   @override
   Widget build(BuildContext context) {
@@ -1763,12 +1673,11 @@ class _ProductImage
       );
     }
 
-    return PremiumProductImage(path: image);
+    return PremiumProductImage(path: image, fallbackPath: fallbackPath);
   }
 }
 
-class _ModeOption
-    extends StatelessWidget {
+class _ModeOption extends StatelessWidget {
   const _ModeOption({
     required this.icon,
     required this.title,
@@ -1789,25 +1698,17 @@ class _ModeOption
       color: selected
           ? const Color(0xFFEAF7EF)
           : const Color(0xFFF8FAF9),
-      borderRadius:
-      BorderRadius.circular(19),
+      borderRadius: BorderRadius.circular(19),
       child: InkWell(
         onTap: onTap,
-        borderRadius:
-        BorderRadius.circular(19),
+        borderRadius: BorderRadius.circular(19),
         child: Container(
-          padding:
-          const EdgeInsets.all(15),
+          padding: const EdgeInsets.all(15),
           decoration: BoxDecoration(
-            borderRadius:
-            BorderRadius.circular(
-              19,
-            ),
+            borderRadius: BorderRadius.circular(19),
             border: Border.all(
               color: selected
-                  ? const Color(
-                0xFFB7DFC7,
-              )
+                  ? const Color(0xFFB7DFC7)
                   : AppColors.border,
             ),
           ),
@@ -1816,14 +1717,11 @@ class _ModeOption
               Container(
                 width: 48,
                 height: 48,
-                decoration:
-                BoxDecoration(
+                decoration: BoxDecoration(
                   color: selected
                       ? AppColors.primary
                       : Colors.white,
-                  borderRadius:
-                  BorderRadius
-                      .circular(15),
+                  borderRadius: BorderRadius.circular(15),
                 ),
                 child: Icon(
                   icon,
@@ -1835,34 +1733,24 @@ class _ModeOption
               const SizedBox(width: 13),
               Expanded(
                 child: Column(
-                  crossAxisAlignment:
-                  CrossAxisAlignment
-                      .start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Text(
                       title,
-                      style:
-                      const TextStyle(
-                        color: AppColors
-                            .textPrimary,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
                         fontSize: 14,
-                        fontWeight:
-                        FontWeight
-                            .w900,
+                        fontWeight: FontWeight.w900,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       subtitle,
-                      style:
-                      const TextStyle(
-                        color: AppColors
-                            .textSecondary,
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
                         fontSize: 10.5,
                         height: 1.35,
-                        fontWeight:
-                        FontWeight
-                            .w600,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
@@ -1870,10 +1758,8 @@ class _ModeOption
               ),
               Icon(
                 selected
-                    ? Icons
-                    .check_circle_rounded
-                    : Icons
-                    .radio_button_unchecked_rounded,
+                    ? Icons.check_circle_rounded
+                    : Icons.radio_button_unchecked_rounded,
                 color: selected
                     ? AppColors.primary
                     : AppColors.border,
@@ -1937,11 +1823,9 @@ class _FilterChip extends StatelessWidget {
               style: TextStyle(
                 color: selected
                     ? Colors.white
-                    : AppColors
-                    .textSecondary,
+                    : AppColors.textSecondary,
                 fontSize: 10.5,
-                fontWeight:
-                FontWeight.w800,
+                fontWeight: FontWeight.w800,
               ),
             ),
           ),
@@ -1951,8 +1835,7 @@ class _FilterChip extends StatelessWidget {
   }
 }
 
-class _SortOption
-    extends StatelessWidget {
+class _SortOption extends StatelessWidget {
   const _SortOption({
     required this.title,
     required this.value,
@@ -1978,10 +1861,8 @@ class _SortOption
       ),
       trailing: Icon(
         selected
-            ? Icons
-            .radio_button_checked_rounded
-            : Icons
-            .radio_button_unchecked_rounded,
+            ? Icons.radio_button_checked_rounded
+            : Icons.radio_button_unchecked_rounded,
         color: selected
             ? AppColors.primary
             : AppColors.textSecondary,
@@ -1990,8 +1871,7 @@ class _SortOption
   }
 }
 
-class _EmptyState
-    extends StatelessWidget {
+class _EmptyState extends StatelessWidget {
   const _EmptyState({
     required this.title,
     required this.hasSearch,
@@ -2006,62 +1886,52 @@ class _EmptyState
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding:
-        const EdgeInsets.all(30),
+        padding: const EdgeInsets.all(30),
         child: Column(
-          mainAxisSize:
-          MainAxisSize.min,
+          mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             Container(
               width: 85,
               height: 85,
-              decoration:
-              const BoxDecoration(
-                color:
-                Color(0xFFEAF7EF),
+              decoration: const BoxDecoration(
+                color: AppColors.background,
                 shape: BoxShape.circle,
               ),
               child: const Icon(
-                Icons
-                    .inventory_2_outlined,
-                color: AppColors.primary,
-                size: 38,
+                Icons.search_off_rounded,
+                color: AppColors.textSecondary,
+                size: 42,
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 16),
             Text(
               hasSearch
-                  ? 'No matching products'
-                  : 'No $title products available',
-              textAlign:
-              TextAlign.center,
-              style:
-              const TextStyle(
-                color:
-                AppColors.textPrimary,
+                  ? 'No products matching search'
+                  : 'No products found in $title',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
                 fontSize: 18,
-                fontWeight:
-                FontWeight.w900,
+                fontWeight: FontWeight.w900,
+                color: AppColors.textPrimary,
               ),
             ),
-            const SizedBox(height: 7),
-            const Text(
-              'Products added to Firestore will appear here automatically.',
-              textAlign:
-              TextAlign.center,
-              style: TextStyle(
-                color: AppColors
-                    .textSecondary,
-                fontSize: 12,
+            const SizedBox(height: 8),
+            Text(
+              hasSearch
+                  ? 'Try searching with different keywords or clear filters'
+                  : 'Check back later for newly added items',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppColors.textSecondary,
               ),
             ),
             if (hasSearch) ...<Widget>[
-              const SizedBox(height: 16),
-              OutlinedButton(
+              const SizedBox(height: 18),
+              FilledButton.icon(
                 onPressed: onClear,
-                child: const Text(
-                  'CLEAR FILTERS',
-                ),
+                icon: const Icon(Icons.clear_rounded, size: 18),
+                label: const Text('Clear search'),
               ),
             ],
           ],
@@ -2071,8 +1941,7 @@ class _EmptyState
   }
 }
 
-class _ErrorState
-    extends StatelessWidget {
+class _ErrorState extends StatelessWidget {
   const _ErrorState({
     required this.onRetry,
   });
@@ -2083,15 +1952,12 @@ class _ErrorState
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding:
-        const EdgeInsets.all(30),
+        padding: const EdgeInsets.all(30),
         child: Column(
-          mainAxisSize:
-          MainAxisSize.min,
+          mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             const Icon(
-              Icons
-                  .cloud_off_outlined,
+              Icons.cloud_off_outlined,
               color: AppColors.error,
               size: 52,
             ),
@@ -2099,28 +1965,23 @@ class _ErrorState
             const Text(
               'Unable to load products',
               style: TextStyle(
-                color:
-                AppColors.textPrimary,
+                color: AppColors.textPrimary,
                 fontSize: 18,
-                fontWeight:
-                FontWeight.w900,
+                fontWeight: FontWeight.w900,
               ),
             ),
             const SizedBox(height: 8),
             const Text(
               'Check your connection and Firestore configuration.',
-              textAlign:
-              TextAlign.center,
+              textAlign: TextAlign.center,
               style: TextStyle(
-                color: AppColors
-                    .textSecondary,
+                color: AppColors.textSecondary,
               ),
             ),
             const SizedBox(height: 15),
             FilledButton(
               onPressed: onRetry,
-              child:
-              const Text('RETRY'),
+              child: const Text('RETRY'),
             ),
           ],
         ),

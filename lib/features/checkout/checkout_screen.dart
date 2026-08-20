@@ -1,9 +1,12 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../app/app_routes.dart';
 import '../../core/theme/app_colors.dart';
+import '../../data/models/cart_item_model.dart';
+import '../../data/models/cart_model.dart';
+import '../../data/repositories/cart_repository.dart';
+import '../../core/network/api_response.dart';
+import '../../core/services/backend_api_service.dart';
 import 'widgets/checkout_address_section.dart';
 import 'widgets/checkout_coupon_section.dart';
 import 'widgets/checkout_delivery_section.dart';
@@ -48,6 +51,7 @@ class _CheckoutScreenState
     extends State<CheckoutScreen> {
   final TextEditingController _couponController =
   TextEditingController();
+  final BackendApiService _apiService = BackendApiService();
 
   String? _couponCode;
 
@@ -56,20 +60,12 @@ class _CheckoutScreenState
   bool _applyingCoupon = false;
   bool _continuing = false;
 
-  User? get _user =>
-      FirebaseAuth.instance.currentUser;
 
-  DocumentReference<Map<String, dynamic>> _cartDocument(
-      String uid,
-      ) {
-    return FirebaseFirestore.instance
-        .collection('carts')
-        .doc(uid);
-  }
 
   @override
   void dispose() {
     _couponController.dispose();
+    _apiService.dispose();
     super.dispose();
   }
 
@@ -136,119 +132,22 @@ class _CheckoutScreenState
     });
 
     try {
-      final QuerySnapshot<Map<String, dynamic>> snapshot =
-      await FirebaseFirestore.instance
-          .collection('coupons')
-          .where(
-        'code',
-        isEqualTo: code,
-      )
-          .limit(1)
-          .get();
-
-      if (snapshot.docs.isEmpty) {
-        if (mounted) {
-          setState(() {
-            _couponCode = null;
-            _couponDiscount = 0;
-          });
-        }
-
-        _showMessage(
-          'Invalid coupon code.',
-          error: true,
-        );
-
-        return;
-      }
-
-      final Map<String, dynamic> data =
-      snapshot.docs.first.data();
-
-      final bool active =
-      data['isActive'] is bool
-          ? data['isActive'] as bool
-          : data['active'] is bool
-          ? data['active'] as bool
-          : true;
-
-      if (!active) {
-        _showMessage(
-          'This coupon is not active.',
-          error: true,
-        );
-        return;
-      }
-
-      final double minimumOrder =
-      _toDouble(
-        data['minimumOrder'] ??
-            data['minOrder'],
+      final ApiResponse<dynamic> response = await _apiService.validateCoupon(
+        code: code,
+        subtotal: subtotal,
       );
-
-      if (subtotal < minimumOrder) {
-        _showMessage(
-          'Minimum order value is ${_currency(minimumOrder)}.',
-          error: true,
-        );
+      if (!response.isSuccess || response.data is! Map) {
+        _showMessage(response.message.isNotEmpty ? response.message : 'Invalid coupon code.', error: true);
         return;
       }
-
-      final String type =
-      (data['discountType'] ??
-          data['type'] ??
-          'fixed')
-          .toString()
-          .toLowerCase();
-
-      final double value =
-      _toDouble(
-        data['discountValue'] ??
-            data['value'] ??
-            data['discount'],
-      );
-
-      double discount = 0;
-
-      if (type == 'percentage' ||
-          type == 'percent') {
-        discount =
-            subtotal * value / 100;
-
-        final double maximumDiscount =
-        _toDouble(
-          data['maximumDiscount'] ??
-              data['maxDiscount'],
-        );
-
-        if (maximumDiscount > 0 &&
-            discount > maximumDiscount) {
-          discount = maximumDiscount;
-        }
-      } else {
-        discount = value;
-      }
-
-      if (discount < 0) {
-        discount = 0;
-      }
-
-      if (discount > subtotal) {
-        discount = subtotal;
-      }
-
-      if (!mounted) {
-        return;
-      }
-
+      final Map<String, dynamic> data = Map<String, dynamic>.from(response.data as Map);
       setState(() {
         _couponCode = code;
-        _couponDiscount = discount;
+        _couponDiscount = (data['discount'] as num?)?.toDouble() ?? 0;
       });
+      _showMessage('Coupon $code applied!');
 
-      _showMessage(
-        'Coupon $code applied successfully.',
-      );
+      return;
     } catch (_) {
       _showMessage(
         'Unable to apply coupon.',
@@ -358,10 +257,8 @@ class _CheckoutScreenState
         _couponDiscount,
         'deliveryFee':
         totals.deliveryFee,
-        'grandTotal':
-        totals.grandTotal,
-        'itemCount':
-        totals.quantity,
+        'grandTotal': totals.grandTotal,
+        'itemCount': totals.quantity,
       },
     );
 
@@ -374,85 +271,51 @@ class _CheckoutScreenState
 
   @override
   Widget build(BuildContext context) {
-    final User? user = _user;
-
-    if (user == null) {
-      return _LoginRequired(
-        onLogin: () {
-          Navigator.of(context)
-              .pushNamedAndRemoveUntil(
-            AppRoutes.login,
-                (
-                Route<dynamic> route,
-                ) =>
-            false,
-          );
-        },
-      );
-    }
-
     return Scaffold(
-      backgroundColor:
-      AppColors.background,
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Column(
           children: <Widget>[
             _buildHeader(),
             Expanded(
-              child: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-                stream: _cartDocument(user.uid).snapshots(),
+              child: StreamBuilder<CartModel>(
+                stream: CartRepository().watchCart(),
                 builder: (
-                    BuildContext context,
-                    AsyncSnapshot<DocumentSnapshot<Map<String, dynamic>>>
-                    snapshot,
-                    ) {
-                  if (snapshot
-                      .connectionState ==
-                      ConnectionState.waiting &&
+                  BuildContext context,
+                  AsyncSnapshot<CartModel> snapshot,
+                ) {
+                  if (snapshot.connectionState == ConnectionState.waiting &&
                       !snapshot.hasData) {
                     return const Center(
-                      child:
-                      CircularProgressIndicator(),
+                      child: CircularProgressIndicator(),
                     );
                   }
 
-                  if (snapshot.hasError) {
-                    return _ErrorView(
-                      onRetry: () {
-                        setState(() {});
-                      },
+                  final CartModel cart = snapshot.data ?? CartModel.empty('guest');
+                  final List<_CheckoutCartItem> items = cart.items.map((CartItemModel item) {
+                    return _CheckoutCartItem(
+                      documentId: item.id,
+                      productId: item.productId,
+                      name: item.name,
+                      image: item.imageUrl,
+                      shoppingMode: item.shoppingMode,
+                      unit: item.unit,
+                      unitPrice: item.unitPrice,
+                      mrp: item.mrp,
+                      quantity: item.quantity,
+                      inStock: true,
                     );
-                  }
-
-                  final List<
-                      _CheckoutCartItem>
-                  items = ((snapshot.data?.data()?['items'] as Iterable?) ??
-                          const <dynamic>[])
-                      .whereType<Map>()
-                      .map(
-                        (Map item) => _CheckoutCartItem.fromMap(
-                          item.map(
-                            (dynamic key, dynamic value) =>
-                                MapEntry<String, dynamic>(key.toString(), value),
-                          ),
-                        ),
-                      )
-                      .toList(growable: false);
+                  }).toList();
 
                   if (items.isEmpty) {
                     return _EmptyCheckout(
                       onShop: () {
-                        _go(
-                          AppRoutes
-                              .categories,
-                        );
+                        _go(AppRoutes.categories);
                       },
                     );
                   }
 
-                  return _buildCheckout(
-                    items,
-                  );
+                  return _buildCheckout(items);
                 },
               ),
             ),

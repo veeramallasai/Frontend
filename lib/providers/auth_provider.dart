@@ -1,31 +1,43 @@
-import 'dart:async';
-
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
 import '../core/enums/auth_state.dart';
 import '../core/errors/error_handler.dart';
+import '../data/models/user_model.dart';
 import '../data/repositories/auth_repository.dart';
+import '../data/repositories/session_repository.dart';
 
 class AuthProvider extends ChangeNotifier {
   AuthProvider({AuthRepository? repository})
       : _repository = repository ?? AuthRepository() {
-    _subscription = _repository.watchAuthState().listen(_onUserChanged);
-    _onUserChanged(_repository.currentUser);
+    _initSession();
   }
 
   final AuthRepository _repository;
-  StreamSubscription<User?>? _subscription;
-  User? _user;
+  UserModel? _user;
   AuthState _state = AuthState.initial;
   String? _errorMessage;
   bool _disposed = false;
 
-  User? get user => _user;
+  UserModel? get user => _user;
   AuthState get state => _state;
   bool get isLoading => _state == AuthState.loading;
   bool get isAuthenticated => _user != null;
   String? get errorMessage => _errorMessage;
+
+  void _initSession() {
+    final session = SessionRepository().currentSession;
+    if (session.isAuthenticated) {
+      _user = UserModel(
+        id: session.userId,
+        email: session.email,
+        phoneNumber: session.phoneNumber,
+      );
+      _state = AuthState.authenticated;
+    } else {
+      _user = null;
+      _state = AuthState.unauthenticated;
+    }
+  }
 
   Future<bool> signIn(String email, String password) => _run(
         () => _repository.signInWithEmail(email: email, password: password),
@@ -37,7 +49,8 @@ class AuthProvider extends ChangeNotifier {
     required String firstName,
     String lastName = '',
     String phoneNumber = '',
-  }) => _run(
+  }) =>
+      _run(
         () => _repository.registerWithEmail(
           email: email,
           password: password,
@@ -58,10 +71,7 @@ class AuthProvider extends ChangeNotifier {
     _notify();
     try {
       await action();
-      _user = _repository.currentUser;
-      _state = _user == null
-          ? AuthState.unauthenticated
-          : AuthState.authenticated;
+      _initSession();
       return true;
     } catch (error) {
       _state = AuthState.error;
@@ -82,16 +92,6 @@ class AuthProvider extends ChangeNotifier {
     _notify();
   }
 
-  void _onUserChanged(User? user) {
-    _user = user;
-    if (_state != AuthState.loading) {
-      _state = user == null
-          ? AuthState.unauthenticated
-          : AuthState.authenticated;
-    }
-    _notify();
-  }
-
   void _notify() {
     if (!_disposed) notifyListeners();
   }
@@ -99,7 +99,6 @@ class AuthProvider extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
-    _subscription?.cancel();
     super.dispose();
   }
 }

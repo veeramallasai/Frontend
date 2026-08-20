@@ -1,10 +1,9 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class AuthSessionModel {
   const AuthSessionModel({
     required this.userId,
     this.email = '',
     this.phoneNumber = '',
+    this.token = '',
     this.provider = 'password',
     this.isAuthenticated = false,
     this.createdAt,
@@ -15,6 +14,7 @@ class AuthSessionModel {
   final String userId;
   final String email;
   final String phoneNumber;
+  final String token;
   final String provider;
   final bool isAuthenticated;
   final DateTime? createdAt;
@@ -28,6 +28,7 @@ class AuthSessionModel {
         userId: _text(map['userId'] ?? map['uid']),
         email: _text(map['email']),
         phoneNumber: _text(map['phoneNumber'] ?? map['phone']),
+        token: _text(map['token'] ?? map['accessToken']),
         provider: _text(map['provider'], fallback: 'password'),
         isAuthenticated: _boolean(map['isAuthenticated'] ?? map['signedIn']),
         createdAt: _date(map['createdAt']),
@@ -36,19 +37,33 @@ class AuthSessionModel {
       );
 
   Map<String, dynamic> toMap() => <String, dynamic>{
-        'userId': userId, 'email': email, 'phoneNumber': phoneNumber,
-        'provider': provider, 'isAuthenticated': isAuthenticated,
-        if (createdAt != null) 'createdAt': Timestamp.fromDate(createdAt!),
-        if (expiresAt != null) 'expiresAt': Timestamp.fromDate(expiresAt!),
-        if (lastSeenAt != null) 'lastSeenAt': Timestamp.fromDate(lastSeenAt!),
+        'userId': userId,
+        'email': email,
+        'phoneNumber': phoneNumber,
+        'token': token,
+        'provider': provider,
+        'isAuthenticated': isAuthenticated,
+        if (createdAt != null) 'createdAt': createdAt!.toIso8601String(),
+        if (expiresAt != null) 'expiresAt': expiresAt!.toIso8601String(),
+        if (lastSeenAt != null) 'lastSeenAt': lastSeenAt!.toIso8601String(),
       };
 
-  AuthSessionModel copyWith({String? userId, String? email, String? phoneNumber,
-      String? provider, bool? isAuthenticated, DateTime? createdAt,
-      DateTime? expiresAt, DateTime? lastSeenAt}) => AuthSessionModel(
+  AuthSessionModel copyWith({
+    String? userId,
+    String? email,
+    String? phoneNumber,
+    String? token,
+    String? provider,
+    bool? isAuthenticated,
+    DateTime? createdAt,
+    DateTime? expiresAt,
+    DateTime? lastSeenAt,
+  }) =>
+      AuthSessionModel(
         userId: userId ?? this.userId,
         email: email ?? this.email,
         phoneNumber: phoneNumber ?? this.phoneNumber,
+        token: token ?? this.token,
         provider: provider ?? this.provider,
         isAuthenticated: isAuthenticated ?? this.isAuthenticated,
         createdAt: createdAt ?? this.createdAt,
@@ -61,7 +76,11 @@ String _text(dynamic value, {String fallback = ''}) {
   final String result = value?.toString().trim() ?? '';
   return result.isEmpty ? fallback : result;
 }
-bool _boolean(dynamic value) => value is bool ? value :
-    <String>{'true', '1', 'yes'}.contains('$value'.toLowerCase());
-DateTime? _date(dynamic value) => value is Timestamp ? value.toDate() :
-    value is DateTime ? value : DateTime.tryParse(value?.toString() ?? '');
+
+bool _boolean(dynamic value) => value is bool
+    ? value
+    : <String>{'true', '1', 'yes'}.contains('$value'.toLowerCase());
+
+DateTime? _date(dynamic value) => value is DateTime
+    ? value
+    : DateTime.tryParse(value?.toString() ?? '');

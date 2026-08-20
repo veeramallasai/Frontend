@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class UserModel {
   const UserModel({
     required this.uid,
@@ -37,9 +35,6 @@ class UserModel {
   }
   bool get isShopOwner => shoppingMode == 'shop';
 
-  factory UserModel.fromDocument(DocumentSnapshot<Map<String, dynamic>> doc) =>
-      UserModel.fromMap(doc.data() ?? <String, dynamic>{}, documentId: doc.id);
-
   factory UserModel.fromMap(Map<String, dynamic> map, {String documentId = ''}) => UserModel(
         uid: _text(documentId.isNotEmpty ? documentId : map['uid'] ?? map['id']),
         firstName: _text(map['firstName']),
@@ -57,27 +52,50 @@ class UserModel {
       );
 
   Map<String, dynamic> toMap() => <String, dynamic>{
-        'uid': uid, 'firstName': firstName, 'lastName': lastName,
-        'email': email, 'phoneNumber': phoneNumber, 'photoUrl': photoUrl,
-        'shoppingMode': shoppingMode, 'isPhoneVerified': isPhoneVerified,
-        'isProfileComplete': isProfileComplete, 'isActive': isActive,
-        if (createdAt != null) 'createdAt': Timestamp.fromDate(createdAt!),
-        if (updatedAt != null) 'updatedAt': Timestamp.fromDate(updatedAt!),
-        if (lastLoginAt != null) 'lastLoginAt': Timestamp.fromDate(lastLoginAt!),
+        'uid': uid,
+        'firstName': firstName,
+        'lastName': lastName,
+        'email': email,
+        'phoneNumber': phoneNumber,
+        'photoUrl': photoUrl,
+        'shoppingMode': shoppingMode,
+        'isPhoneVerified': isPhoneVerified,
+        'isProfileComplete': isProfileComplete,
+        'isActive': isActive,
+        if (createdAt != null) 'createdAt': createdAt!.toIso8601String(),
+        if (updatedAt != null) 'updatedAt': updatedAt!.toIso8601String(),
+        if (lastLoginAt != null) 'lastLoginAt': lastLoginAt!.toIso8601String(),
       };
 
-  UserModel copyWith({String? uid, String? firstName, String? lastName,
-      String? email, String? phoneNumber, String? photoUrl, String? shoppingMode,
-      bool? isPhoneVerified, bool? isProfileComplete, bool? isActive,
-      DateTime? createdAt, DateTime? updatedAt, DateTime? lastLoginAt}) => UserModel(
-        uid: uid ?? this.uid, firstName: firstName ?? this.firstName,
-        lastName: lastName ?? this.lastName, email: email ?? this.email,
-        phoneNumber: phoneNumber ?? this.phoneNumber, photoUrl: photoUrl ?? this.photoUrl,
+  UserModel copyWith({
+    String? uid,
+    String? firstName,
+    String? lastName,
+    String? email,
+    String? phoneNumber,
+    String? photoUrl,
+    String? shoppingMode,
+    bool? isPhoneVerified,
+    bool? isProfileComplete,
+    bool? isActive,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    DateTime? lastLoginAt,
+  }) =>
+      UserModel(
+        uid: uid ?? this.uid,
+        firstName: firstName ?? this.firstName,
+        lastName: lastName ?? this.lastName,
+        email: email ?? this.email,
+        phoneNumber: phoneNumber ?? this.phoneNumber,
+        photoUrl: photoUrl ?? this.photoUrl,
         shoppingMode: shoppingMode ?? this.shoppingMode,
         isPhoneVerified: isPhoneVerified ?? this.isPhoneVerified,
         isProfileComplete: isProfileComplete ?? this.isProfileComplete,
-        isActive: isActive ?? this.isActive, createdAt: createdAt ?? this.createdAt,
-        updatedAt: updatedAt ?? this.updatedAt, lastLoginAt: lastLoginAt ?? this.lastLoginAt,
+        isActive: isActive ?? this.isActive,
+        createdAt: createdAt ?? this.createdAt,
+        updatedAt: updatedAt ?? this.updatedAt,
+        lastLoginAt: lastLoginAt ?? this.lastLoginAt,
       );
 }
 
@@ -85,7 +103,12 @@ String _text(dynamic value, {String fallback = ''}) {
   final String result = value?.toString().trim() ?? '';
   return result.isEmpty ? fallback : result;
 }
-bool _boolean(dynamic value, {bool fallback = false}) => value is bool ? value :
-    value == null ? fallback : <String>{'true', '1', 'yes'}.contains('$value'.toLowerCase());
-DateTime? _date(dynamic value) => value is Timestamp ? value.toDate() :
+
+bool _boolean(dynamic value, {bool fallback = false}) => value is bool
+    ? value
+    : value == null
+        ? fallback
+        : <String>{'true', '1', 'yes'}.contains('$value'.toLowerCase());
+
+DateTime? _date(dynamic value) =>
     value is DateTime ? value : DateTime.tryParse(value?.toString() ?? '');

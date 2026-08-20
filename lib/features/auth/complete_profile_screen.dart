@@ -1,8 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../app/app_routes.dart';
+import '../../core/network/api_response.dart';
+import '../../core/services/backend_api_service.dart';
 import '../../core/theme/app_colors.dart';
 import 'widgets/auth_background.dart';
 
@@ -17,43 +17,40 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
+  final BackendApiService _apiService = BackendApiService();
   bool _saving = false;
-
-  @override
-  void initState() {
-    super.initState();
-    final User? user = FirebaseAuth.instance.currentUser;
-    _nameController.text = user?.displayName ?? '';
-    _phoneController.text = user?.phoneNumber?.replaceFirst('+91', '') ?? '';
-  }
 
   @override
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
+    _apiService.dispose();
     super.dispose();
   }
 
   Future<void> _save() async {
     if (!(_formKey.currentState?.validate() ?? false) || _saving) return;
-    final User? user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+
     setState(() => _saving = true);
     try {
       final String name = _nameController.text.trim();
       final String phone = _phoneController.text.trim();
-      await user.updateDisplayName(name);
-      await FirebaseFirestore.instance.collection('users').doc(user.uid).set(
-        <String, dynamic>{
-          'displayName': name,
-          'phoneNumber': phone.isEmpty ? '' : '+91$phone',
-          'profileCompleted': true,
-          'updatedAt': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true),
-      );
+
+      final ApiResponse<dynamic> response = await _apiService.updateProfile(<String, dynamic>{
+        'displayName': name,
+        'phoneNumber': phone.isEmpty ? '' : '+91$phone',
+        'profileCompleted': true,
+      });
+
       if (!mounted) return;
-      Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.home, (Route<dynamic> route) => false);
+
+      if (response.isSuccess) {
+        Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.home, (Route<dynamic> route) => false);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(response.message.isNotEmpty ? response.message : 'Unable to save profile. Please try again.')),
+        );
+      }
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Unable to save profile. Please try again.')));
@@ -101,20 +98,16 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                           TextFormField(
                             controller: _phoneController,
                             keyboardType: TextInputType.phone,
-                            validator: (String? value) {
-                              final String phone = value?.trim() ?? '';
-                              return phone.isNotEmpty && !RegExp(r'^[6-9]\d{9}$').hasMatch(phone) ? 'Enter a valid mobile number' : null;
-                            },
-                            decoration: const InputDecoration(labelText: 'Mobile number', prefixText: '+91  ', prefixIcon: Icon(Icons.phone_iphone_rounded)),
+                            decoration: const InputDecoration(labelText: 'Phone number (optional)', prefixIcon: Icon(Icons.phone_outlined), prefixText: '+91 '),
                           ),
-                          const SizedBox(height: 22),
+                          const SizedBox(height: 24),
                           SizedBox(
-                            height: 54,
+                            height: 52,
                             child: FilledButton(
                               onPressed: _saving ? null : _save,
                               child: _saving
-                                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                                  : const Text('SAVE & CONTINUE', style: TextStyle(fontWeight: FontWeight.w900)),
+                                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                  : const Text('SAVE & CONTINUE'),
                             ),
                           ),
                         ],

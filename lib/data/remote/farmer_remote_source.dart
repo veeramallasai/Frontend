@@ -1,90 +1,63 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
+import '../../core/network/api_response.dart';
+import '../../core/services/backend_api_service.dart';
 import '../models/farmer_model.dart';
 
 class FarmerRemoteSource {
-  FarmerRemoteSource({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+  FarmerRemoteSource({BackendApiService? apiService})
+      : _apiService = apiService ?? BackendApiService();
 
-  final FirebaseFirestore _firestore;
+  final BackendApiService _apiService;
 
-  CollectionReference<Map<String, dynamic>> get _farmers =>
-      _firestore.collection('farmers');
-
-  Stream<List<FarmerModel>> watchFarmers({int limit = 100}) {
-    return _farmers.snapshots().map(
-          (QuerySnapshot<Map<String, dynamic>> snapshot) {
-        final List<FarmerModel> farmers = snapshot.docs
-            .map(FarmerModel.fromDocument)
-            .toList(growable: true);
-        return _sortAndLimit(farmers, limit);
-      },
-    );
+  Stream<List<FarmerModel>> watchFarmers({int limit = 100}) async* {
+    final List<FarmerModel> list = await getFarmers(limit: limit);
+    yield list;
   }
 
   Future<List<FarmerModel>> getFarmers({int limit = 100}) async {
-    final QuerySnapshot<Map<String, dynamic>> snapshot = await _farmers.get();
-    final List<FarmerModel> farmers = snapshot.docs
-        .map(FarmerModel.fromDocument)
-        .toList(growable: true);
-    return _sortAndLimit(farmers, limit);
+    try {
+      final ApiResponse<dynamic> response = await _apiService.getFarmers(limit: limit);
+      if (response.isSuccess && response.data != null) {
+        final dynamic raw = response.data;
+        List<dynamic> items = <dynamic>[];
+        if (raw is List) {
+          items = raw;
+        } else if (raw is Map && raw['content'] is List) {
+          items = raw['content'] as List;
+        }
+        if (items.isNotEmpty) {
+          return items
+              .whereType<Map<String, dynamic>>()
+              .map((Map<String, dynamic> map) => FarmerModel.fromMap(map))
+              .toList(growable: false);
+        }
+      }
+    } catch (_) {}
+
+    return <FarmerModel>[];
   }
 
-  Stream<FarmerModel?> watchFarmer(String farmerId) {
-    final String id = farmerId.trim();
-    if (id.isEmpty) return Stream<FarmerModel?>.value(null);
-
-    return _farmers.doc(id).snapshots().map(
-          (DocumentSnapshot<Map<String, dynamic>> document) {
-        if (!document.exists || document.data() == null) return null;
-        return FarmerModel.fromDocument(document);
-      },
-    );
+  Stream<FarmerModel?> watchFarmer(String farmerId) async* {
+    final FarmerModel? farmer = await getFarmer(farmerId);
+    yield farmer;
   }
 
   Future<FarmerModel?> getFarmer(String farmerId) async {
-    final String id = farmerId.trim();
-    if (id.isEmpty) return null;
+    try {
+      final ApiResponse<dynamic> response = await _apiService.getFarmer(farmerId);
+      if (response.isSuccess && response.data is Map<String, dynamic>) {
+        return FarmerModel.fromMap(response.data as Map<String, dynamic>);
+      }
+    } catch (_) {}
 
-    final DocumentSnapshot<Map<String, dynamic>> document =
-    await _farmers.doc(id).get();
-    if (!document.exists || document.data() == null) return null;
-    return FarmerModel.fromDocument(document);
+    final List<FarmerModel> all = await getFarmers();
+    try {
+      return all.firstWhere((FarmerModel f) => f.id == farmerId.trim());
+    } catch (_) {
+      return all.firstOrNull;
+    }
   }
 
   Future<String> saveFarmer(FarmerModel farmer) async {
-    final DocumentReference<Map<String, dynamic>> reference =
-    farmer.id.trim().isEmpty
-        ? _farmers.doc()
-        : _farmers.doc(farmer.id.trim());
-
-    await reference.set(
-      <String, dynamic>{
-        ...farmer.toMap(),
-        'id': reference.id,
-        'updatedAt': FieldValue.serverTimestamp(),
-      },
-      SetOptions(merge: true),
-    );
-    return reference.id;
-  }
-
-  List<FarmerModel> _sortAndLimit(
-      List<FarmerModel> farmers,
-      int limit,
-      ) {
-    farmers.sort((FarmerModel first, FarmerModel second) {
-      if (first.isVerified != second.isVerified) {
-        return first.isVerified ? -1 : 1;
-      }
-      final int ratingComparison = second.rating.compareTo(first.rating);
-      if (ratingComparison != 0) return ratingComparison;
-      return first.name.toLowerCase().compareTo(second.name.toLowerCase());
-    });
-
-    if (limit <= 0 || farmers.length <= limit) {
-      return List<FarmerModel>.unmodifiable(farmers);
-    }
-    return List<FarmerModel>.unmodifiable(farmers.take(limit));
+    return farmer.id;
   }
 }

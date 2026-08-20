@@ -1,63 +1,38 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
-import '../../core/constants/asset_paths.dart';
+import '../../core/network/api_response.dart';
+import '../../core/services/backend_api_service.dart';
 import '../models/banner_model.dart';
 
 class BannerRepository {
-  BannerRepository({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+  BannerRepository({BackendApiService? apiService})
+      : _apiService = apiService ?? BackendApiService();
 
-  final FirebaseFirestore _firestore;
-
-  List<BannerModel> get localBanners => <BannerModel>[
-        const BannerModel(
-          id: 'fresh_vegetables',
-          title: 'Fresh from local farms',
-          subtitle: 'Handpicked vegetables delivered with care',
-          imageUrl: AssetPaths.categoryVegetables,
-          actionLabel: 'Shop now',
-          route: '/category-products?category=vegetables',
-        ),
-        const BannerModel(
-          id: 'seasonal_fruits',
-          title: 'Seasonal favourites',
-          subtitle: 'Naturally fresh fruits at honest prices',
-          imageUrl: AssetPaths.categorySeasonal,
-          actionLabel: 'Explore',
-          route: '/category-products?category=seasonal',
-          priority: 1,
-        ),
-      ];
+  final BackendApiService _apiService;
 
   Stream<List<BannerModel>> watchBanners() async* {
-    yield localBanners;
-    try {
-      await for (final QuerySnapshot<Map<String, dynamic>> snapshot
-          in _firestore.collection('banners').snapshots()) {
-        final List<BannerModel> values = snapshot.docs
-            .map(BannerModel.fromDocument)
-            .where((BannerModel banner) => banner.isVisible)
-            .toList(growable: true)
-          ..sort((BannerModel a, BannerModel b) => a.priority.compareTo(b.priority));
-        if (values.isNotEmpty) yield List<BannerModel>.unmodifiable(values);
-      }
-    } catch (_) {
-      yield localBanners;
-    }
+    final List<BannerModel> banners = await getBanners();
+    yield banners;
   }
 
   Future<List<BannerModel>> getBanners() async {
     try {
-      final QuerySnapshot<Map<String, dynamic>> snapshot =
-          await _firestore.collection('banners').get();
-      final List<BannerModel> values = snapshot.docs
-          .map(BannerModel.fromDocument)
-          .where((BannerModel banner) => banner.isVisible)
-          .toList(growable: true)
-        ..sort((BannerModel a, BannerModel b) => a.priority.compareTo(b.priority));
-      return values.isEmpty ? localBanners : List<BannerModel>.unmodifiable(values);
-    } catch (_) {
-      return localBanners;
-    }
+      final ApiResponse<dynamic> response = await _apiService.getBanners();
+      if (response.isSuccess && response.data != null) {
+        final dynamic raw = response.data;
+        List<dynamic> items = <dynamic>[];
+        if (raw is List) {
+          items = raw;
+        } else if (raw is Map && raw['content'] is List) {
+          items = raw['content'] as List;
+        }
+        if (items.isNotEmpty) {
+          return items
+              .whereType<Map<String, dynamic>>()
+              .map((Map<String, dynamic> map) => BannerModel.fromMap(map))
+              .toList(growable: false);
+        }
+      }
+    } catch (_) {}
+
+    return <BannerModel>[];
   }
 }

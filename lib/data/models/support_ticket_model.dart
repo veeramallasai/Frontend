@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class SupportTicketModel {
   const SupportTicketModel({
     required this.id,
@@ -29,9 +27,6 @@ class SupportTicketModel {
   String get statusLabel => status.split('_').map((String word) =>
       word.isEmpty ? word : '${word[0].toUpperCase()}${word.substring(1)}').join(' ');
 
-  factory SupportTicketModel.fromDocument(DocumentSnapshot<Map<String, dynamic>> doc) =>
-      SupportTicketModel.fromMap(doc.data() ?? <String, dynamic>{}, documentId: doc.id);
-
   factory SupportTicketModel.fromMap(Map<String, dynamic> map, {String documentId = ''}) => SupportTicketModel(
         id: _text(documentId.isNotEmpty ? documentId : map['id']),
         userId: _text(map['userId'] ?? map['uid']),
@@ -46,21 +41,41 @@ class SupportTicketModel {
       );
 
   Map<String, dynamic> toMap() => <String, dynamic>{
-        'id': id, 'userId': userId, 'subject': subject, 'message': message,
-        'category': category, 'status': status, 'priority': priority,
+        'id': id,
+        'userId': userId,
+        'subject': subject,
+        'message': message,
+        'category': category,
+        'status': status,
+        'priority': priority,
         'response': response,
-        if (createdAt != null) 'createdAt': Timestamp.fromDate(createdAt!),
-        if (updatedAt != null) 'updatedAt': Timestamp.fromDate(updatedAt!),
+        if (createdAt != null) 'createdAt': createdAt!.toIso8601String(),
+        if (updatedAt != null) 'updatedAt': updatedAt!.toIso8601String(),
       };
 
-  SupportTicketModel copyWith({String? id, String? userId, String? subject,
-      String? message, String? category, String? status, String? priority,
-      String? response, DateTime? createdAt, DateTime? updatedAt}) => SupportTicketModel(
-        id: id ?? this.id, userId: userId ?? this.userId,
-        subject: subject ?? this.subject, message: message ?? this.message,
-        category: category ?? this.category, status: status ?? this.status,
-        priority: priority ?? this.priority, response: response ?? this.response,
-        createdAt: createdAt ?? this.createdAt, updatedAt: updatedAt ?? this.updatedAt,
+  SupportTicketModel copyWith({
+    String? id,
+    String? userId,
+    String? subject,
+    String? message,
+    String? category,
+    String? status,
+    String? priority,
+    String? response,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) =>
+      SupportTicketModel(
+        id: id ?? this.id,
+        userId: userId ?? this.userId,
+        subject: subject ?? this.subject,
+        message: message ?? this.message,
+        category: category ?? this.category,
+        status: status ?? this.status,
+        priority: priority ?? this.priority,
+        response: response ?? this.response,
+        createdAt: createdAt ?? this.createdAt,
+        updatedAt: updatedAt ?? this.updatedAt,
       );
 }
 
@@ -68,5 +83,6 @@ String _text(dynamic value, {String fallback = ''}) {
   final String result = value?.toString().trim() ?? '';
   return result.isEmpty ? fallback : result;
 }
-DateTime? _date(dynamic value) => value is Timestamp ? value.toDate() :
+
+DateTime? _date(dynamic value) =>
     value is DateTime ? value : DateTime.tryParse(value?.toString() ?? '');
