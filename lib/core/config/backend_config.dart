@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 class BackendConfig {
   BackendConfig._();
 
-  static const String defaultDeployedUrl = 'https://farmtohome-production-ca90.up.railway.app';
+  static const String defaultDeployedUrl = 'https://farmtohome-backend-production.up.railway.app';
   static const String defaultLocalUrl = 'http://localhost:8082';
 
   static const String _overrideBaseUrl = String.fromEnvironment(
