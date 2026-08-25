@@ -34,7 +34,7 @@ class BackendConfig {
       return withoutTrailingSlash(_overrideBaseUrl.trim());
     }
 
-    if (EnvironmentConfig.isDevelopment) {
+    if (kDebugMode && EnvironmentConfig.isDevelopment) {
       return localDevelopmentBaseUrl;
     }
 

@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 enum AppEnvironment { development, staging, production }
 
 class EnvironmentConfig {
@@ -5,7 +7,7 @@ class EnvironmentConfig {
 
   static const String _environmentName = String.fromEnvironment(
     'APP_ENV',
-    defaultValue: 'development',
+    defaultValue: kDebugMode ? 'development' : 'production',
   );
 
   static AppEnvironment get current {
