@@ -12,7 +12,6 @@ void main() {
 
     expect(localHost, isNotEmpty);
     expect(localHost, startsWith('http'));
-    expect(localHost, contains('8082'));
   });
 
   test('backend config defaults to the deployed host unless local backend is explicitly enabled', () {

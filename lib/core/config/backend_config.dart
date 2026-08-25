@@ -7,7 +7,7 @@ class BackendConfig {
 
   static const String defaultDeployedUrl =
       'https://farmtohome-backend-production.up.railway.app';
-  static const String defaultLocalUrl = 'http://localhost:8082';
+  static const String defaultLocalUrl = defaultDeployedUrl;
 
   static const String _overrideBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
@@ -21,15 +21,15 @@ class BackendConfig {
 
   static String get localDevelopmentBaseUrl {
     if (kIsWeb) {
-      return defaultLocalUrl;
+      return defaultDeployedUrl;
     }
     if (Platform.isAndroid) {
-      return 'http://10.0.2.2:8082';
+      return defaultDeployedUrl;
     }
     if (Platform.isIOS) {
-      return 'http://127.0.0.1:8082';
+      return defaultDeployedUrl;
     }
-    return defaultLocalUrl;
+    return defaultDeployedUrl;
   }
 
   static String get baseUrl {
