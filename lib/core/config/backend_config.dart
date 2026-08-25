@@ -2,8 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 
-import 'environment_config.dart';
-
 class BackendConfig {
   BackendConfig._();
 
@@ -14,6 +12,11 @@ class BackendConfig {
   static const String _overrideBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
     defaultValue: '',
+  );
+
+  static const bool _useLocalBackend = bool.fromEnvironment(
+    'USE_LOCAL_BACKEND',
+    defaultValue: false,
   );
 
   static String get localDevelopmentBaseUrl {
@@ -34,7 +37,7 @@ class BackendConfig {
       return withoutTrailingSlash(_overrideBaseUrl.trim());
     }
 
-    if (kDebugMode && EnvironmentConfig.isDevelopment) {
+    if (_useLocalBackend) {
       return localDevelopmentBaseUrl;
     }
 

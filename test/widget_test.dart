@@ -15,8 +15,8 @@ void main() {
     expect(localHost, contains('8082'));
   });
 
-  test('backend config uses local host during development', () {
-    expect(BackendConfig.baseUrl, BackendConfig.localDevelopmentBaseUrl);
+  test('backend config defaults to the deployed host unless local backend is explicitly enabled', () {
+    expect(BackendConfig.baseUrl, BackendConfig.defaultDeployedUrl);
   });
 
   test('backend config strips trailing slashes from custom URLs', () {
