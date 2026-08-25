@@ -1,9 +1,14 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
+
+import 'environment_config.dart';
 
 class BackendConfig {
   BackendConfig._();
 
-  static const String defaultDeployedUrl = 'https://farmtohome-backend-production.up.railway.app';
+  static const String defaultDeployedUrl =
+      'https://farmtohome-backend-production.up.railway.app';
   static const String defaultLocalUrl = 'http://localhost:8082';
 
   static const String _overrideBaseUrl = String.fromEnvironment(
@@ -11,10 +16,28 @@ class BackendConfig {
     defaultValue: '',
   );
 
+  static String get localDevelopmentBaseUrl {
+    if (kIsWeb) {
+      return defaultLocalUrl;
+    }
+    if (Platform.isAndroid) {
+      return 'http://10.0.2.2:8082';
+    }
+    if (Platform.isIOS) {
+      return 'http://127.0.0.1:8082';
+    }
+    return defaultLocalUrl;
+  }
+
   static String get baseUrl {
     if (_overrideBaseUrl.trim().isNotEmpty) {
-      return _withoutTrailingSlash(_overrideBaseUrl.trim());
+      return withoutTrailingSlash(_overrideBaseUrl.trim());
     }
+
+    if (EnvironmentConfig.isDevelopment) {
+      return localDevelopmentBaseUrl;
+    }
+
     return defaultDeployedUrl;
   }
 
@@ -34,6 +57,6 @@ class BackendConfig {
     );
   }
 
-  static String _withoutTrailingSlash(String value) =>
+  static String withoutTrailingSlash(String value) =>
       value.endsWith('/') ? value.substring(0, value.length - 1) : value;
 }
